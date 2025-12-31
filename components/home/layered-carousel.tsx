@@ -13,7 +13,7 @@ const CARD_HEIGHT = 170;
 const offers = [
     { id: '1', title: 'AC Repair', subtitle: 'Flat 20% Off', image: require('@/assets/images/handyman.png') },
     { id: '2', title: 'Washing Machine', subtitle: 'Free Inspection', image: require('@/assets/images/handyman.png') },
-    { id: '3', title: 'Home Cleaning', subtitle: 'Starting at ₹299', image: require('@/assets/images/handyman.png') },
+    { id: '3', title: 'Electrician', subtitle: 'Starting at ₹299', image: require('@/assets/images/handyman.png') },
 ];
 
 export function OfferStack({ onChange }: OfferStackProps) {
@@ -31,12 +31,12 @@ export function OfferStack({ onChange }: OfferStackProps) {
             onPanResponderEnd(e, gestureState) {
                 onChange && onChange(false);
             },
-            onPanResponderMove: Animated.event([null, { dy: pan.y }], { useNativeDriver: false }),
+            onPanResponderMove: Animated.event([null, { dx: pan.x }], { useNativeDriver: false }),
             onPanResponderRelease: (_, g) => {
-                if (Math.abs(g.dy) > 120) {
+                if (Math.abs(g.dx) > 120) {
                     Animated.parallel([
                         Animated.timing(pan, {
-                            toValue: { x: g.dy > 0 ? width : -width, y: 0 },
+                            toValue: { x: g.dx > 0 ? width : -width, y: 0 },
                             duration: 220,
                             useNativeDriver: false,
                         }),

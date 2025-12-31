@@ -1,25 +1,26 @@
-import { Text, StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
-import { useEffect, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/themed-text';
 import { BrandColors } from '@/app/theme/colors';
-import { SearchBar } from '@/components/home/search-bar';
 import { OfferStack } from '@/components/home/layered-carousel';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SearchBar } from '@/components/home/search-bar';
 import { ServiceSection } from '@/components/home/service-section';
+import { ThemedText } from '@/components/themed-text';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
 
 const applianceServices = [
-  { id: '1', title: 'AC Repair', image: require('@/assets/images/react-logo.png') },
-  { id: '2', title: 'Washing Machine', image: require('@/assets/images/react-logo.png') },
-  { id: '3', title: 'Refrigerator', image: require('@/assets/images/react-logo.png') },
+  { id: '1', title: 'AC Repair', image: require('@/assets/images/services/ac-repair.png') },
+  { id: '2', title: 'Washing Machine', image: require('@/assets/images/services/washing-machine.webp') },
+  { id: '3', title: 'Refrigerator', image: require('@/assets/images/services/refrigerator.webp') },
 ];
 
 const homeCareServices = [
-  { id: '1', title: 'Cleaning', image: require('@/assets/images/react-logo.png') },
-  { id: '2', title: 'Plumbing', image: require('@/assets/images/react-logo.png') },
-  { id: '3', title: 'Painting', image: require('@/assets/images/react-logo.png') },
+  { id: '1', title: 'Plumbing', image: require('@/assets/images/services/plumbing.webp') },
+  { id: '2', title: 'Electrician', image: require('@/assets/images/services/electrical.webp') },
+  { id: '3', title: 'Carpenter', image: require('@/assets/images/services/carpentry.webp') },
 ];
 
 
@@ -27,7 +28,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [selectedCity, setSelectedCity] = useState('Bareilly');
   const [open, setOpen] = useState(false);
-  const [enableScroll, setEnableScroll] = useState(true);
+
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -78,17 +80,25 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 30 }}
-        bounces={false} 
+        bounces={false}
         overScrollMode="never"
-        scrollEnabled={enableScroll}
+        scrollEnabled={scrollEnabled}
       >
         <SearchBar />
         <View style={{ marginTop: 30, overflow: 'hidden' }}>
-          <OfferStack/> 
+          <OfferStack onChange={(isSwiping) => {setScrollEnabled(!isSwiping);}}/>
         </View>
 
-        <ServiceSection title="Appliance Repair Services" data={applianceServices} />
-        <ServiceSection title="Home Care Services" data={homeCareServices} />
+        <ServiceSection
+          title="Appliance Repair Services"
+          data={applianceServices}
+          onViewMore={() => router.push('/services')}
+        />
+        <ServiceSection
+          title="Home Care Services"
+          data={homeCareServices}
+          onViewMore={() => router.push('/services')}
+        />
 
       </ScrollView>
     </View>
