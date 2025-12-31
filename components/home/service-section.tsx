@@ -1,11 +1,16 @@
 import { BrandColors } from '@/app/theme/colors';
 import React from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View, ImageSourcePropType } from 'react-native';
 
-type Item = { id: string; image: any; title: string };
+type Item = { id: number; icon_image: ImageSourcePropType | string; name: string; slug: string };
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 3;   // 3 columns, responsive
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const NUM_COLUMNS = 3;
+const GAP = 12;
+const HORIZONTAL_PADDING = 16 * 2;
+const CARD_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_ASSET_URL || 'https://api.example.com';
 
 export function ServiceSection({ title, data, onViewMore }: { title: string; data: Item[]; onViewMore?: () => void }) {
   return (
@@ -22,17 +27,28 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
       <FlatList
         data={data}
         numColumns={3}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         scrollEnabled={false}
         columnWrapperStyle={styles.row}
-        renderItem={({ item }) => (
-          <View style={[styles.serviceCard, { width: CARD_WIDTH }]}>
-            <View style={styles.imageWrapper}>
-              <Image source={item.image} style={styles.serviceImage} />
+        renderItem={({ item, index }) => {
+          const isLastColumn = (index + 1) % NUM_COLUMNS === 0;
+          return (
+            <View style={[styles.serviceCard, { width: CARD_WIDTH }, !isLastColumn && { marginRight: GAP }]}>
+              <View style={styles.imageWrapper}>
+                <Image
+                  source={
+                  typeof item.icon_image === 'string'
+                    ? { uri: `${API_BASE_URL}/${item.icon_image}` }
+                    : item.icon_image
+                }
+                style={styles.serviceImage}
+                defaultSource={require('@/assets/images/react-logo.png')}
+              />
             </View>
-            <Text style={styles.serviceText}>{item.title}</Text>
+            <Text style={styles.serviceText}>{item.name}</Text>
           </View>
-        )}
+        );
+      }}
       />
     </View>
   );
@@ -63,7 +79,8 @@ const styles = StyleSheet.create({
   },
 
   row: {
-    justifyContent: 'space-between',
+    flex: 1,
+    justifyContent: 'flex-start',
     marginBottom: 16,
   },
 

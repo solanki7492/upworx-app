@@ -1,22 +1,12 @@
 import { BrandColors } from '@/app/theme/colors';
 import { ServiceSection } from '@/components/home/service-section';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useServices } from '@/lib';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const allServices = [
-  { id: '1', title: 'AC Repair', image: require('@/assets/images/react-logo.png') },
-  { id: '2', title: 'Washing Machine', image: require('@/assets/images/react-logo.png') },
-  { id: '3', title: 'Refrigerator', image: require('@/assets/images/react-logo.png') },
-  { id: '4', title: 'Cleaning', image: require('@/assets/images/react-logo.png') },
-  { id: '5', title: 'Plumbing', image: require('@/assets/images/react-logo.png') },
-  { id: '6', title: 'Painting', image: require('@/assets/images/react-logo.png') },
-  { id: '7', title: 'Electrical', image: require('@/assets/images/react-logo.png') },
-  { id: '8', title: 'Carpentry', image: require('@/assets/images/react-logo.png') },
-  { id: '9', title: 'Pest Control', image: require('@/assets/images/react-logo.png') },
-];
 
 export default function ServicesScreen() {
   const insets = useSafeAreaInsets();
+  const { services, loading, error, refetch } = useServices();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -24,14 +14,27 @@ export default function ServicesScreen() {
         <Text style={styles.headerTitle}>Services</Text>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
-        bounces={false}
-        overScrollMode="never"
-      >
-        <ServiceSection title="All Services" data={allServices} />
-      </ScrollView>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={BrandColors.text} />
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.retryText} onPress={refetch}>
+            Tap to retry
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 30 }}
+          bounces={false}
+          overScrollMode="never"
+        >
+          <ServiceSection title="All Services" data={services} />
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -48,5 +51,28 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: BrandColors.text,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryText: {
+    fontSize: 16,
+    color: BrandColors.text,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });

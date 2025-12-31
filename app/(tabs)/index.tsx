@@ -1,38 +1,92 @@
 import { BrandColors } from '@/app/theme/colors';
+import { CitySelectionModal } from '@/components/city-selection-modal';
 import { OfferStack } from '@/components/home/layered-carousel';
 import { SearchBar } from '@/components/home/search-bar';
 import { ServiceSection } from '@/components/home/service-section';
 import { ThemedText } from '@/components/themed-text';
+import { StorageService } from '@/lib';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
 
 const applianceServices = [
-  { id: '1', title: 'AC Repair', image: require('@/assets/images/services/ac-repair.png') },
-  { id: '2', title: 'Washing Machine', image: require('@/assets/images/services/washing-machine.webp') },
-  { id: '3', title: 'Refrigerator', image: require('@/assets/images/services/refrigerator.webp') },
+  { id: 1, name: 'AC Repair', icon_image: require('@/assets/images/services/ac-repair.png'), slug: 'ac-repair' },
+  { id: 2, name: 'Washing Machine', icon_image: require('@/assets/images/services/washing-machine.webp'), slug: 'washing-machine' },
+  { id: 3, name: 'Refrigerator', icon_image: require('@/assets/images/services/refrigerator.webp'), slug: 'refrigerator' },
 ];
 
 const homeCareServices = [
-  { id: '1', title: 'Plumbing', image: require('@/assets/images/services/plumbing.webp') },
-  { id: '2', title: 'Electrician', image: require('@/assets/images/services/electrical.webp') },
-  { id: '3', title: 'Carpenter', image: require('@/assets/images/services/carpentry.webp') },
+  { id: 1, name: 'Plumbing', icon_image: require('@/assets/images/services/plumbing.webp'), slug: 'plumbing' },
+  { id: 2, name: 'Electrician', icon_image: require('@/assets/images/services/electrical.webp'), slug: 'electrician' },
+  { id: 3, name: 'Carpenter', icon_image: require('@/assets/images/services/carpentry.webp'), slug: 'carpenter' },
 ];
-
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [selectedCity, setSelectedCity] = useState('Bareilly');
   const [open, setOpen] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
 
   const [scrollEnabled, setScrollEnabled] = useState(true);
 
+  // useEffect(() => {
+  //   const clearStorage = async () => {
+  //     await StorageService.clearAll();
+  //   };
+  //   clearStorage();
+  // }, []);
+
+  // Check if city is already selected on mount
+  useEffect(() => {
+    const checkStoredCity = async () => {
+      try {
+        const storedCity = await StorageService.getSelectedCity();
+        if (storedCity) {
+          // Convert stored lowercase value to display format
+          const cityName = CITIES.find((c) => c.toLowerCase() === storedCity);
+          if (cityName) {
+            setSelectedCity(cityName);
+          }
+        } else {
+          // Show modal if no city is stored
+          setShowCityModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking stored city:', error);
+        setShowCityModal(true);
+      }
+    };
+
+    checkStoredCity();
+  }, []);
+
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city);
+    setShowCityModal(false);
+  };
+
+  const handleDropdownCityChange = async (city: string) => {
+    setSelectedCity(city);
+    setOpen(false);
+    // Store lowercase value
+    try {
+      await StorageService.setSelectedCity(city.toLowerCase());
+    } catch (error) {
+      console.error('Error saving city from dropdown:', error);
+    }
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <CitySelectionModal
+        visible={showCityModal}
+        onCitySelect={handleCitySelect}
+      />
+
       <View style={styles.headerRow}>
         <View>
           <TouchableOpacity
@@ -58,10 +112,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={city}
                     style={styles.dropdownItem}
-                    onPress={() => {
-                      setSelectedCity(city);
-                      setOpen(false);
-                    }}
+                    onPress={() => handleDropdownCityChange(city)}
                   >
                     <Text style={styles.dropdownText}>{city}</Text>
                   </TouchableOpacity>
@@ -86,7 +137,7 @@ export default function HomeScreen() {
       >
         <SearchBar />
         <View style={{ marginTop: 30, overflow: 'hidden' }}>
-          <OfferStack onChange={(isSwiping) => {setScrollEnabled(!isSwiping);}}/>
+          <OfferStack onChange={(isSwiping) => { setScrollEnabled(!isSwiping); }} />
         </View>
 
         <ServiceSection
