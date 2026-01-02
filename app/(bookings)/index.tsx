@@ -94,7 +94,10 @@ export default function BookingScreen() {
             <Section title="Services Provided" items={data.services} />
 
             <Text style={styles.notice}>
-                The Visit & Diagnosis charge is Rs 100. That is applicable only if the service is denied by the customer after the serviceman's visit to the service location.
+                <Text style={{ fontWeight: '700' }}>
+                    The Visit & Diagnosis charge is Rs 100.
+                </Text>
+                {' '}That is applicable only if the service is denied by the customer after the serviceman's visit to the service location.
             </Text>
 
             <Text style={styles.help}>Need help? Call us +91 8273737872</Text>
@@ -139,7 +142,6 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: BrandColors.text,
-        marginBottom: 10
     },
     notice: {
         marginTop: 20,
