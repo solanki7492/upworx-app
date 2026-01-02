@@ -1,26 +1,27 @@
-import { BrandColors } from '@/app/theme/colors';
 import { CitySelectionModal } from '@/components/city-selection-modal';
 import { OfferStack } from '@/components/home/layered-carousel';
 import { SearchBar } from '@/components/home/search-bar';
 import { ServiceSection } from '@/components/home/service-section';
 import { ThemedText } from '@/components/themed-text';
 import { StorageService } from '@/lib';
+import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useApp } from '@/context/AppContext';
 
 const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
 
 const applianceServices = [
-  { id: 1, name: 'AC Repair', icon_image: require('@/assets/images/services/ac-repair.png'), slug: 'ac-repair' },
+  { id: 1, name: 'AC Repair', icon_image: require('@/assets/images/services/ac-repair.png'), slug: 'ac' },
   { id: 2, name: 'Washing Machine', icon_image: require('@/assets/images/services/washing-machine.webp'), slug: 'washing-machine' },
   { id: 3, name: 'Refrigerator', icon_image: require('@/assets/images/services/refrigerator.webp'), slug: 'refrigerator' },
 ];
 
 const homeCareServices = [
-  { id: 1, name: 'Plumbing', icon_image: require('@/assets/images/services/plumbing.webp'), slug: 'plumbing' },
+  { id: 1, name: 'Plumbing', icon_image: require('@/assets/images/services/plumbing.webp'), slug: 'plumber' },
   { id: 2, name: 'Electrician', icon_image: require('@/assets/images/services/electrical.webp'), slug: 'electrician' },
   { id: 3, name: 'Carpenter', icon_image: require('@/assets/images/services/carpentry.webp'), slug: 'carpenter' },
 ];
@@ -32,13 +33,8 @@ export default function HomeScreen() {
   const [showCityModal, setShowCityModal] = useState(false);
 
   const [scrollEnabled, setScrollEnabled] = useState(true);
+  const { setCity } = useApp();
 
-  // useEffect(() => {
-  //   const clearStorage = async () => {
-  //     await StorageService.clearAll();
-  //   };
-  //   clearStorage();
-  // }, []);
 
   // Check if city is already selected on mount
   useEffect(() => {
@@ -71,8 +67,8 @@ export default function HomeScreen() {
 
   const handleDropdownCityChange = async (city: string) => {
     setSelectedCity(city);
+    setCity(city);
     setOpen(false);
-    // Store lowercase value
     try {
       await StorageService.setSelectedCity(city.toLowerCase());
     } catch (error) {

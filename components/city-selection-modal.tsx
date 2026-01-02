@@ -1,5 +1,5 @@
-import { BrandColors } from '@/app/theme/colors';
 import { StorageService } from '@/lib';
+import { BrandColors } from '@/theme/colors';
 import React from 'react';
 import {
     Dimensions,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: 14,
-        color: BrandColors.mutedText,
+        color: '#64748B',
         textAlign: 'center',
         marginBottom: 24,
     },

@@ -1,4 +1,4 @@
-import { BrandColors } from '@/app/theme/colors';
+import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

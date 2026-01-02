@@ -9,7 +9,7 @@ export const AppTheme: Theme = {
         card: BrandColors.card,
         text: BrandColors.text,
         border: BrandColors.border,
-        notification: BrandColors.accent,
+        notification: BrandColors.notification,
     },
     fonts: {
         regular: {

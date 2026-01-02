@@ -1,9 +1,9 @@
-import { View, Text, Image, StyleSheet, Animated, PanResponder, Dimensions, TouchableOpacity } from 'react-native';
-import { BrandColors } from '@/app/theme/colors';
+import { BrandColors } from '@/theme/colors';
 import { useRef, useState } from 'react';
+import { Animated, Dimensions, Image, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type OfferStackProps = {
-  onChange?: (offer: any) => void;
+    onChange?: (offer: any) => void;
 };
 
 const { width } = Dimensions.get('window');
@@ -26,7 +26,7 @@ export function OfferStack({ onChange }: OfferStackProps) {
         PanResponder.create({
             onMoveShouldSetPanResponder: () => true,
             onPanResponderStart: () => {
-              onChange && onChange(true);
+                onChange && onChange(true);
             },
             onPanResponderEnd(e, gestureState) {
                 onChange && onChange(false);

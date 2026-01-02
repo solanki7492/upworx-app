@@ -1,6 +1,6 @@
-import { View, TextInput, StyleSheet } from 'react-native';
+import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { BrandColors } from '@/app/theme/colors';
+import { StyleSheet, TextInput, View } from 'react-native';
 
 export function SearchBar() {
   return (

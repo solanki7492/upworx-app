@@ -1,6 +1,8 @@
-import { BrandColors } from '@/app/theme/colors';
+import { BrandColors } from '@/theme/colors';
 import React from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View, ImageSourcePropType } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Dimensions, FlatList, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useApp } from '@/context/AppContext';
 
 type Item = { id: number; icon_image: ImageSourcePropType | string; name: string; slug: string };
 
@@ -10,9 +12,10 @@ const GAP = 12;
 const HORIZONTAL_PADDING = 16 * 2;
 const CARD_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_ASSET_URL || 'https://api.example.com';
-
 export function ServiceSection({ title, data, onViewMore }: { title: string; data: Item[]; onViewMore?: () => void }) {
+  const router = useRouter();
+  const { city } = useApp();
+  
   return (
     <View style={styles.wrapper}>
       <View style={styles.headerRow}>
@@ -33,22 +36,35 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
         renderItem={({ item, index }) => {
           const isLastColumn = (index + 1) % NUM_COLUMNS === 0;
           return (
-            <View style={[styles.serviceCard, { width: CARD_WIDTH }, !isLastColumn && { marginRight: GAP }]}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                router.push({
+                  pathname: '/(bookings)',
+                  params: {
+                    slug: item.slug,
+                    serviceName: item.name,
+                    city: city,
+                  },
+                });
+              }}
+              style={[styles.serviceCard, { width: CARD_WIDTH }, !isLastColumn && { marginRight: GAP }]}
+            >
               <View style={styles.imageWrapper}>
                 <Image
                   source={
-                  typeof item.icon_image === 'string'
-                    ? { uri: `${API_BASE_URL}/${item.icon_image}` }
-                    : item.icon_image
-                }
-                style={styles.serviceImage}
-                defaultSource={require('@/assets/images/react-logo.png')}
-              />
-            </View>
-            <Text style={styles.serviceText}>{item.name}</Text>
-          </View>
-        );
-      }}
+                    typeof item.icon_image === 'string'
+                      ? { uri: `${item.icon_image}` }
+                      : item.icon_image
+                  }
+                  style={styles.serviceImage}
+                  defaultSource={require('@/assets/images/react-logo.png')}
+                />
+              </View>
+              <Text style={styles.serviceText}>{item.name}</Text>
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );

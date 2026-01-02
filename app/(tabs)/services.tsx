@@ -1,6 +1,6 @@
-import { BrandColors } from '@/app/theme/colors';
 import { ServiceSection } from '@/components/home/service-section';
 import { useServices } from '@/lib';
+import { BrandColors } from '@/theme/colors';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
