@@ -1,10 +1,10 @@
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { register as registerApi } from '@/lib';
 import { BrandColors } from '@/theme/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Register() {
     const insets = useSafeAreaInsets();
@@ -12,10 +12,79 @@ export default function Register() {
     const [agreed, setAgreed] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+    });
+
+    const handleRegister = async () => {
+        // Validation
+        if (!formData.name.trim()) {
+            Alert.alert('Missing Info', 'Please enter your full name');
+            return;
+        }
+        if (!formData.phone.trim() || formData.phone.length < 10) {
+            Alert.alert('Invalid Info', 'Please enter a valid mobile number');
+            return;
+        }
+        if (!formData.email.trim()) {
+            Alert.alert('Missing Info', 'Please enter your email');
+            return;
+        }
+        if (!formData.password.trim()) {
+            Alert.alert('Missing Info', 'Please enter a password');
+            return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
+            return;
+        }
+        if (!agreed) {
+            Alert.alert('Terms Required', 'Please agree to the Terms of Service');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await registerApi({
+                name: formData.name.trim(),
+                phone: formData.phone.trim(),
+                email: formData.email.trim(),
+                password: formData.password.trim(),
+                terms: 1,
+            });
+
+            if (response.status) {
+                Alert.alert('Success', response.message);
+                router.push({
+                    pathname: '/(auth)/otp',
+                    params: {
+                        mobile: formData.phone.trim(),
+                        from: 'register',
+                        userId: response.data.user_id.toString(),
+                    },
+                });
+            } else {
+                Alert.alert('Error', response.message || 'Registration failed');
+            }
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'An error occurred during registration');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <Ionicons name="arrow-back" size={24} color={BrandColors.primary} />
+                </TouchableOpacity>
                 <Text style={styles.heading}>
                     Register
                 </Text>
@@ -25,14 +94,38 @@ export default function Register() {
 
                 <Text style={styles.title}>Create Account</Text>
 
-                <TextInput placeholder="Full Name" style={styles.input} />
-                <TextInput placeholder="Phone" style={styles.input} keyboardType="phone-pad" />
-                <TextInput placeholder="Email" style={styles.input} keyboardType="email-address" />
+                <TextInput
+                    placeholder="Full Name"
+                    style={styles.input}
+                    value={formData.name}
+                    onChangeText={(text) => setFormData({ ...formData, name: text })}
+                    editable={!loading}
+                />
+                <TextInput
+                    placeholder="Mobile Number"
+                    style={styles.input}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    value={formData.phone}
+                    onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                    editable={!loading}
+                />
+                <TextInput
+                    placeholder="Email"
+                    style={styles.input}
+                    keyboardType="email-address"
+                    value={formData.email}
+                    onChangeText={(text) => setFormData({ ...formData, email: text })}
+                    editable={!loading}
+                />
                 <View>
                     <TextInput
                         placeholder="Password"
                         secureTextEntry={!showPassword}
                         style={styles.input}
+                        value={formData.password}
+                        onChangeText={(text) => setFormData({ ...formData, password: text })}
+                        editable={!loading}
                     />
                     <TouchableOpacity
                         style={{ position: 'absolute', right: 15, top: 15 }}
@@ -47,6 +140,9 @@ export default function Register() {
                 </View>
                 <View>
                     <TextInput
+                        value={formData.confirmPassword}
+                        onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+                        editable={!loading}
                         placeholder="Confirm Password"
                         secureTextEntry={!showConfirmPassword}
                         style={styles.input}
@@ -67,11 +163,11 @@ export default function Register() {
                     <Pressable
                         onPress={() => setAgreed(!agreed)}
                         style={[
-                        styles.checkbox,
-                        agreed && {
-                            backgroundColor: BrandColors.primary,
-                            borderColor: BrandColors.primary,
-                        },
+                            styles.checkbox,
+                            agreed && {
+                                backgroundColor: BrandColors.primary,
+                                borderColor: BrandColors.primary,
+                            },
                         ]}
                     >
                         {agreed && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -84,8 +180,16 @@ export default function Register() {
                 </View>
 
 
-                <TouchableOpacity style={styles.primaryBtn}>
-                    <Text style={styles.btnText}>Register</Text>
+                <TouchableOpacity
+                    style={[styles.primaryBtn, loading && styles.disabledBtn]}
+                    onPress={handleRegister}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.btnText}>Register</Text>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -105,6 +209,10 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: BrandColors.background,
         padding: 24,
+    },
+    backBtn: {
+        padding: 6,
+        marginRight: 10,
     },
     header: {
         flexDirection: 'row',
@@ -185,5 +293,8 @@ const styles = StyleSheet.create({
         marginRight: 8,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    disabledBtn: {
+        opacity: 0.6,
     },
 });

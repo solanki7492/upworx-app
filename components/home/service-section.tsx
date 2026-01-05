@@ -1,8 +1,8 @@
+import { useApp } from '@/contexts/app-context';
 import { BrandColors } from '@/theme/colors';
-import React from 'react';
 import { useRouter } from 'expo-router';
+import React from 'react';
 import { Dimensions, FlatList, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useApp } from '@/context/AppContext';
 
 type Item = { id: number; icon_image: ImageSourcePropType | string; name: string; slug: string };
 
@@ -15,7 +15,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING - GAP * (NUM_COLUMNS - 1))
 export function ServiceSection({ title, data, onViewMore }: { title: string; data: Item[]; onViewMore?: () => void }) {
   const router = useRouter();
   const { city } = useApp();
-  
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.headerRow}>
@@ -40,7 +40,7 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
               activeOpacity={0.8}
               onPress={() => {
                 router.push({
-                  pathname: '/(bookings)',
+                  pathname: '/(booking)',
                   params: {
                     slug: item.slug,
                     serviceName: item.name,

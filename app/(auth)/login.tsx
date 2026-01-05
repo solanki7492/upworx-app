@@ -1,19 +1,75 @@
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/auth-context';
+import { login as loginApi, resendOtp } from '@/lib';
 import { BrandColors } from '@/theme/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Login() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { login: authLogin } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
-    const [username, setUsername] = useState('');
+    const [mobile, setMobile] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleLogin = async () => {
+        if (!mobile.trim()) {
+            Alert.alert('Missing Info', 'Please enter mobile number');
+            return;
+        }
+        if (!password.trim()) {
+            Alert.alert('Missing Info', 'Please enter password');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await loginApi({ mobile: mobile.trim(), password: password.trim() });
+
+            if (response.status) {
+                await authLogin(response.token, response.user);
+                //Alert.alert('Success', response.message);
+                router.replace('/(tabs)');
+            } else {
+                Alert.alert('Error', response.message || 'Login failed');
+            }
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'An error occurred during login');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLoginWithOtp = async () => {
+        if (!mobile.trim()) {
+            Alert.alert('Missing Info', 'Please enter mobile number');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await resendOtp({ mobile: mobile.trim() });
+            router.push({
+                pathname: '/(auth)/otp',
+                params: { mobile: mobile.trim(), from: 'login' },
+            });
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to send OTP');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <Ionicons name="arrow-back" size={24} color={BrandColors.primary} />
+                </TouchableOpacity>
                 <Text style={styles.heading}>
                     Login
                 </Text>
@@ -26,8 +82,9 @@ export default function Login() {
                 <TextInput
                     placeholder="Phone or Email"
                     style={styles.input}
-                    value={username}
-                    onChangeText={setUsername}
+                    value={mobile}
+                    onChangeText={setMobile}
+                    editable={!loading}
                 />
 
                 <View>
@@ -35,6 +92,9 @@ export default function Login() {
                         placeholder="Password"
                         secureTextEntry={!showPassword}
                         style={styles.input}
+                        value={password}
+                        onChangeText={setPassword}
+                        editable={!loading}
                     />
                     <TouchableOpacity
                         style={{ position: 'absolute', right: 15, top: 15 }}
@@ -49,27 +109,23 @@ export default function Login() {
                 </View>
 
                 <TouchableOpacity
-                    onPress={() => {
-                        if (!username.trim()) {
-                            Alert.alert('Missing Info', 'Please enter phone number or email first');
-                            return;
-                        } else if (username.trim().length < 10) {
-                            Alert.alert('Invalid Info', 'Please enter a valid phone number');
-                            return;
-                        }
-
-                        router.push({
-                            pathname: '/(auth)/otp',
-                            params: { user: username },
-                        });
-                    }}
+                    onPress={handleLoginWithOtp}
+                    disabled={loading}
                 >
                     <Text style={styles.otpText}>Proceed with OTP</Text>
                 </TouchableOpacity>
 
 
-                <TouchableOpacity style={styles.primaryBtn}>
-                    <Text style={styles.btnText}>Login</Text>
+                <TouchableOpacity
+                    style={[styles.primaryBtn, loading && styles.disabledBtn]}
+                    onPress={handleLogin}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.btnText}>Login</Text>
+                    )}
                 </TouchableOpacity>
 
                 <TouchableOpacity style={{ marginTop: 12, alignSelf: 'flex-end' }}>
@@ -94,6 +150,10 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: BrandColors.background,
         padding: 24,
+    },
+    backBtn: {
+        padding: 6,
+        marginRight: 10,
     },
     header: {
         flexDirection: 'row',
@@ -163,5 +223,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginVertical: 12,
+    },
+    disabledBtn: {
+        opacity: 0.6,
     },
 });

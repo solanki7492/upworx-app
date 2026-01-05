@@ -1,6 +1,7 @@
-import { AppContext } from './AppContext';
+import { AuthProvider } from '@/contexts/auth-context';
 import { StorageService } from '@/lib';
 import { useEffect, useState } from 'react';
+import { AppContext } from './app-context';
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [city, setCityState] = useState<string | null>(null);
@@ -18,8 +19,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ city, setCity }}>
-      {children}
-    </AppContext.Provider>
+    <AuthProvider>
+      <AppContext.Provider value={{ city, setCity }}>
+        {children}
+      </AppContext.Provider>
+    </AuthProvider>
   );
 }

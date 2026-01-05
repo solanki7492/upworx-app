@@ -73,13 +73,28 @@ export class StorageService {
     /**
      * Get user data
      */
-    static async getUserData(): Promise<Record<string, any> | null> {
+    static async getUserData<T = Record<string, any>>(): Promise<T | null> {
         try {
             const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
             return userData ? JSON.parse(userData) : null;
         } catch (error) {
             console.error('Error retrieving user data:', error);
             return null;
+        }
+    }
+
+    /**
+     * Store auth data (token and user)
+     */
+    static async setAuthData(token: string, userData: Record<string, any>): Promise<void> {
+        try {
+            await AsyncStorage.multiSet([
+                [STORAGE_KEYS.ACCESS_TOKEN, token],
+                [STORAGE_KEYS.USER_DATA, JSON.stringify(userData)],
+            ]);
+        } catch (error) {
+            console.error('Error storing auth data:', error);
+            throw new Error('Failed to store auth data');
         }
     }
 

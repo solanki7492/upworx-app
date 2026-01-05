@@ -1,16 +1,21 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/auth-context';
+import { resendOtp, verifyOtp } from '@/lib';
 import { BrandColors } from '@/theme/colors';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OtpScreen() {
-    const { user } = useLocalSearchParams();
+    const { mobile, from } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { login: authLogin } = useAuth();
 
     const [otp, setOtp] = useState(['', '', '', '']);
     const inputs = useRef<(TextInput | null)[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
 
     const handleChange = (text: string, index: number) => {
         const newOtp = [...otp];
@@ -18,6 +23,53 @@ export default function OtpScreen() {
         setOtp(newOtp);
 
         if (text && index < 3) inputs.current[index + 1]?.focus();
+    };
+
+    const handleVerifyOtp = async () => {
+        const otpCode = otp.join('');
+        if (otpCode.length !== 4) {
+            Alert.alert('Invalid OTP', 'Please enter a 4-digit OTP');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await verifyOtp({
+                otp: otpCode,
+                mobile: mobile as string,
+            });
+
+            if (response.status) {
+                await authLogin(response.token, response.user);
+                Alert.alert('Success', response.message);
+                router.replace('/(tabs)');
+            } else {
+                Alert.alert('Error', response.message || 'OTP verification failed');
+            }
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'An error occurred during verification');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        try {
+            setResendLoading(true);
+            const response = await resendOtp({ mobile: mobile as string });
+
+            if (response.status) {
+                Alert.alert('Success', response.message);
+                setOtp(['', '', '', '']);
+                inputs.current[0]?.focus();
+            } else {
+                Alert.alert('Error', response.message || 'Failed to resend OTP');
+            }
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'An error occurred');
+        } finally {
+            setResendLoading(false);
+        }
     };
 
     return (
@@ -28,7 +80,7 @@ export default function OtpScreen() {
                 </Text>
             </View>
             <Text style={styles.title}>OTP Verification</Text>
-            <Text style={styles.subtitle}>We have sent the OTP to your phone number {user}</Text>
+            <Text style={styles.subtitle}>We have sent the OTP to your phone number {mobile}</Text>
 
             <View style={styles.otpRow}>
                 {otp.map((value, i) => (
@@ -40,12 +92,33 @@ export default function OtpScreen() {
                         maxLength={1}
                         value={value}
                         onChangeText={(text) => handleChange(text, i)}
+                        editable={!loading}
                     />
                 ))}
             </View>
 
-            <TouchableOpacity style={styles.primaryBtn}>
-                <Text style={styles.btnText}>Verify OTP</Text>
+            <TouchableOpacity
+                style={[styles.primaryBtn, loading && styles.disabledBtn]}
+                onPress={handleVerifyOtp}
+                disabled={loading}
+            >
+                {loading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text style={styles.btnText}>Verify OTP</Text>
+                )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.resendBtn}
+                onPress={handleResendOtp}
+                disabled={resendLoading || loading}
+            >
+                {resendLoading ? (
+                    <ActivityIndicator color={BrandColors.primary} />
+                ) : (
+                    <Text style={styles.resendBtnText}>Resend OTP</Text>
+                )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
@@ -106,6 +179,19 @@ const styles = StyleSheet.create({
         marginTop: 20,
         height: 50,
         justifyContent: 'center',
+    },
+    disabledBtn: {
+        opacity: 0.6,
+    },
+    resendBtn: {
+        marginTop: 12,
+        padding: 10,
+        alignItems: 'center',
+    },
+    resendBtnText: {
+        color: BrandColors.primary,
+        fontWeight: '600',
+        textDecorationLine: 'underline',
     },
     cancelBtn: {
         backgroundColor: BrandColors.card,

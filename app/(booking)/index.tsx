@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { useAuth } from '@/contexts/auth-context';
 import { BrandColors } from '@/theme/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SERVICE_DATA = {
     "air-cooler": {
@@ -73,6 +74,30 @@ export default function BookingScreen() {
     const insets = useSafeAreaInsets();
     const data = SERVICE_DATA[slug as keyof typeof SERVICE_DATA];
     const router = useRouter();
+    const { isAuthenticated } = useAuth();
+
+    useEffect(() => {
+        // Check authentication on mount
+        if (!isAuthenticated) {
+            Alert.alert(
+                'Login Required',
+                'Please login to book a service',
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                        onPress: () => router.back(),
+                    },
+                    {
+                        text: 'Login',
+                        onPress: () => {
+                            router.push('/(auth)/login');
+                        },
+                    },
+                ]
+            );
+        }
+    }, [isAuthenticated]);
 
     if (!data) {
         return <Text>Service not found</Text>;
@@ -82,14 +107,14 @@ export default function BookingScreen() {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
+                    <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                 </TouchableOpacity>
 
                 <Text style={styles.heading}>
-                {serviceName} in {city ? city[0].toLocaleUpperCase() + city.slice(1) : ''}
+                    {serviceName} in {city ? city[0].toLocaleUpperCase() + city.slice(1) : ''}
                 </Text>
             </View>
-            
+
             <Section title={`Type of ${serviceName}`} items={data.types} />
             <Section title="Services Provided" items={data.services} />
 

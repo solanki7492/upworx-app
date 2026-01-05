@@ -3,6 +3,8 @@ import { OfferStack } from '@/components/home/layered-carousel';
 import { SearchBar } from '@/components/home/search-bar';
 import { ServiceSection } from '@/components/home/service-section';
 import { ThemedText } from '@/components/themed-text';
+import { useApp } from '@/contexts/app-context';
+import { useAuth } from '@/contexts/auth-context';
 import { StorageService } from '@/lib';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +12,6 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useApp } from '@/context/AppContext';
 
 const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
 
@@ -28,6 +29,7 @@ const homeCareServices = [
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [selectedCity, setSelectedCity] = useState('Bareilly');
   const [open, setOpen] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
@@ -76,6 +78,15 @@ export default function HomeScreen() {
     }
   };
 
+  const getInitials = (name: string) => {
+        return name
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase())
+            .slice(0, 2)
+            .join('');
+    };
+
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <CitySelectionModal
@@ -119,9 +130,9 @@ export default function HomeScreen() {
         </View>
 
         {/* Avatar */}
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>G</Text>
-        </View>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.avatar}>
+          <Text style={styles.avatarText}>{user ? getInitials(user.name) : 'G'}</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
