@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+const { Alert } = require('react-native');
 
 const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
 
@@ -33,6 +34,7 @@ export default function HomeScreen() {
   const [selectedCity, setSelectedCity] = useState('Bareilly');
   const [open, setOpen] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const { setCity } = useApp();
@@ -79,12 +81,12 @@ export default function HomeScreen() {
   };
 
   const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase())
-            .slice(0, 2)
-            .join('');
-    };
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+  };
 
 
   return (

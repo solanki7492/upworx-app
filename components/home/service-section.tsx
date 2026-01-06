@@ -1,8 +1,9 @@
 import { useApp } from '@/contexts/app-context';
+import { useAuth } from '@/contexts/auth-context';
 import { BrandColors } from '@/theme/colors';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, FlatList, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 
 type Item = { id: number; icon_image: ImageSourcePropType | string; name: string; slug: string };
 
@@ -15,6 +16,23 @@ const CARD_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING - GAP * (NUM_COLUMNS - 1))
 export function ServiceSection({ title, data, onViewMore }: { title: string; data: Item[]; onViewMore?: () => void }) {
   const router = useRouter();
   const { city } = useApp();
+  const { isAuthenticated } = useAuth();
+
+  const checkAuthAndRedirect = (onSuccess: () => void) => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        'Login Required',
+        'Please login to continue.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Login', onPress: () => router.push('/(auth)/login') },
+        ],
+        { cancelable: true }
+      );
+      return;
+    }
+    onSuccess();
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -38,7 +56,8 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
           return (
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => {
+              onPress={() =>
+              checkAuthAndRedirect(() => {
                 router.push({
                   pathname: '/(booking)',
                   params: {
@@ -47,7 +66,8 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
                     city: city,
                   },
                 });
-              }}
+              })
+            }
               style={[styles.serviceCard, { width: CARD_WIDTH }, !isLastColumn && { marginRight: GAP }]}
             >
               <View style={styles.imageWrapper}>
