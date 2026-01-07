@@ -1,14 +1,18 @@
+import { getAddresses } from '@/lib/services/address';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CartScreen() {
     const { cart } = useLocalSearchParams();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const [addresses, setAddresses] = useState<any[]>([]);
+    const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
+    const [showAddressList, setShowAddressList] = useState(false);
 
     const [items, setItems] = useState(
         cart ? JSON.parse(decodeURIComponent(cart as string)) : []
@@ -25,6 +29,29 @@ export default function CartScreen() {
     };
 
     const total = items.reduce((t: number, i: any) => t + i.price * i.qty, 0);
+
+    useEffect(() => {
+        const loadAddresses = async () => {
+            const data = await getAddresses();
+            setAddresses(data);
+
+            const defaultAddr = data.find(a => a.default_address === 1);
+            setSelectedAddress(defaultAddr || data[0]);
+        };
+
+        loadAddresses();
+    }, []);
+
+    const getAddressIcon = (type: string | null) => {
+        switch (type) {
+            case 'home':
+                return 'home-outline';
+            case 'office':
+                return 'briefcase-outline';
+            default:
+                return 'location-outline';
+        }
+    };
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -109,15 +136,104 @@ export default function CartScreen() {
                 )}
             </ScrollView>
 
-            {/* Book Button */}
             {items.length > 0 && (
-                <View style={styles.footer}>
+                <View style={styles.bottomBar}>
+
+                    {/* Compact Address Row */}
+                    <TouchableOpacity
+                        style={styles.compactAddress}
+                        activeOpacity={0.8}
+                        onPress={() => setShowAddressList(true)}
+                    >
+                        <Ionicons name="location-outline" size={18} color={BrandColors.primary} />
+                        <Text style={styles.compactAddressText} numberOfLines={1}>
+                            {addresses.length === 0
+                                ? 'Add Address'
+                                : selectedAddress
+                                    ? `${selectedAddress.address_line_1}, ${selectedAddress.address_line_2}, ${selectedAddress.pincode}`
+                                    : 'Loading...'}
+                        </Text>
+
+                        <Ionicons name="chevron-up" size={18} color={BrandColors.mutedText} />
+                    </TouchableOpacity>
+
+                    {/* Confirm Button */}
                     <TouchableOpacity style={styles.bookBtn}>
                         <Text style={styles.bookText}>Confirm Booking</Text>
                         <Ionicons name="checkmark-circle" size={20} color="#fff" />
                     </TouchableOpacity>
+
                 </View>
             )}
+
+            {showAddressList && (
+                <View style={styles.addressOverlay}>
+                    <View style={styles.addressModal}>
+
+                        <Text style={styles.modalTitle}>Select Address</Text>
+
+                        {addresses.length === 0 ? (
+                            <TouchableOpacity
+                                style={styles.addAddressCard}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    setShowAddressList(false);
+                                    router.push('/(profile)/addresses');
+                                }}
+                            >
+                                <Ionicons name="add-circle-outline" size={28} color={BrandColors.primary} />
+                                <Text style={styles.addAddressText}>Add New Address</Text>
+                                <Text style={styles.addAddressSubText}>
+                                    Save your location for faster booking
+                                </Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <ScrollView>
+                                {addresses.map(addr => (
+                                    <TouchableOpacity
+                                        key={addr.id}
+                                        style={[
+                                            styles.addressItem,
+                                            selectedAddress?.id === addr.id && styles.addressItemActive
+                                        ]}
+                                        onPress={() => {
+                                            setSelectedAddress(addr);
+                                            setShowAddressList(false);
+                                        }}
+                                    >
+                                        <View style={styles.addressRow}>
+                                            <Ionicons
+                                                name={getAddressIcon(addr.address_type)}
+                                                size={20}
+                                                color={BrandColors.primary}
+                                                style={{ marginRight: 10 }}
+                                            />
+
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.addressName}>{addr.name}</Text>
+                                                <Text style={styles.addressText}>
+                                                    {addr.address_line_1}, {addr.address_line_2}, {addr.pincode}
+                                                </Text>
+                                            </View>
+
+                                            {selectedAddress?.id === addr.id && (
+                                                <Ionicons name="checkmark-circle" size={18} color={BrandColors.primary} />
+                                            )}
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        )}
+
+
+                        <TouchableOpacity onPress={() => setShowAddressList(false)} style={styles.closeBtn}>
+                            <Text style={{ color: '#fff', fontWeight: '600' }}>Done</Text>
+                        </TouchableOpacity>
+
+                    </View>
+                </View>
+            )}
+
         </View>
     );
 }
@@ -276,39 +392,122 @@ const styles = StyleSheet.create({
         backgroundColor: '#EFF6FF',
         padding: 12,
         borderRadius: 12,
-        marginBottom: 120, 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+        marginBottom: 120,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
         gap: 8
     },
-    footer: {
+    bottomBar: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        padding: 20,
         backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 10,
-    },
-    bookBtn: {
-        backgroundColor: BrandColors.primary,
         padding: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+        elevation: 12,
+    },
+    compactAddress: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F1F5F9',
+        padding: 10,
+        borderRadius: 10,
+        marginBottom: 10,
+    },
+    compactAddressText: {
+        flex: 1,
+        marginHorizontal: 8,
+        fontSize: 13,
+        color: BrandColors.text,
+    },
+    addressOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'flex-end',
+    },
+    addressModal: {
+        backgroundColor: '#fff',
+        padding: 20,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        maxHeight: '60%',
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 12,
+    },
+    closeBtn: {
+        backgroundColor: BrandColors.primary,
+        padding: 14,
         borderRadius: 12,
         alignItems: 'center',
+        marginTop: 12,
+    },
+    addressItem: {
+        padding: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        marginBottom: 10,
+    },
+    addressItemActive: {
+        borderColor: BrandColors.primary,
+        backgroundColor: '#EFF6FF',
+    },
+    addressName: {
+        fontWeight: '600',
+        fontSize: 15,
+        color: BrandColors.text,
+        marginBottom: 4,
+    },
+    addressText: {
+        color: BrandColors.mutedText,
+        fontSize: 14,
+    },
+    bookBtn: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: BrandColors.primary,
+        padding: 14,
+        borderRadius: 12,
         gap: 8,
+        marginBottom: 12,
     },
     bookText: {
         color: '#fff',
-        fontWeight: '700',
         fontSize: 16,
-    }
+        fontWeight: '700',
+    },
+    addressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    addAddressCard: {
+        backgroundColor: '#F1F5F9',
+        borderRadius: 14,
+        padding: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addAddressText: {
+        marginTop: 10,
+        fontSize: 16,
+        fontWeight: '700',
+        color: BrandColors.text,
+    },
+    addAddressSubText: {
+        marginTop: 4,
+        fontSize: 13,
+        color: BrandColors.mutedText,
+        textAlign: 'center',
+    },
 });

@@ -12,43 +12,43 @@ const profileMenuItems = [
         id: '1',
         title: 'Edit Profile',
         icon: 'person-outline',
-        action: 'edit-profile',
+        route: '/(profile)/edit-profile',
     },
     {
         id: '2',
         title: 'My Addresses',
         icon: 'location-outline',
-        action: 'addresses',
+        route: '/(profile)/addresses',
     },
+    // {
+    //     id: '3',
+    //     title: 'Payment Methods',
+    //     icon: 'card-outline',
+    //     route: '/(profile)/payment-methods',
+    // },
     {
         id: '3',
-        title: 'Payment Methods',
-        icon: 'card-outline',
-        action: 'payments',
+        title: 'Notifications',
+        icon: 'notifications-outline',
+        route: '/(profile)/notifications',
     },
     {
         id: '4',
-        title: 'Notifications',
-        icon: 'notifications-outline',
-        action: 'notifications',
+        title: 'Help & Support',
+        icon: 'help-circle-outline',
+        route: '/(profile)/help-support',
     },
     {
         id: '5',
-        title: 'Help & Support',
-        icon: 'help-circle-outline',
-        action: 'support',
+        title: 'Settings',
+        icon: 'settings-outline',
+        route: '/(profile)/settings',
     },
     {
         id: '6',
-        title: 'Settings',
-        icon: 'settings-outline',
-        action: 'settings',
-    },
-    {
-        id: '7',
         title: 'About',
         icon: 'information-circle-outline',
-        action: 'about',
+        route: '/(profile)/about',
     },
 ];
 
@@ -155,7 +155,7 @@ export default function ProfileScreen() {
 
                             <View style={styles.userDetailRow}>
                                 <Ionicons name="call-outline" size={18} color={BrandColors.mutedText} />
-                                <Text style={styles.userDetailText}>{user.phone ? "+91 "+ user.phone : 'N/A'}</Text>
+                                <Text style={styles.userDetailText}>{user.phone ? "+91 " + user.phone : 'N/A'}</Text>
                             </View>
                         </View>
                     </View>
@@ -189,6 +189,7 @@ export default function ProfileScreen() {
                                 index === profileMenuItems.length - 1 && styles.lastMenuItem,
                             ]}
                             activeOpacity={0.7}
+                            onPress={() => router.push(item.route as any)}
                         >
                             <View style={styles.menuItemLeft}>
                                 <View style={styles.menuIconContainer}>
