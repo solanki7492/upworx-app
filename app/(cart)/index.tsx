@@ -55,7 +55,7 @@ const getNext4Days = () => {
 export default function CartScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { items, updateQty: updateCartQty, totalPrice, categorySlug, bookingDetails, setBookingDetails } = useCart();
+    const { items, updateQty: updateCartQty, totalPrice, categorySlug, bookingProblems, bookingSchedule, setBookingProblems, setBookingSchedule } = useCart();
     const [addresses, setAddresses] = useState<any[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
     const [showAddressList, setShowAddressList] = useState(false);
@@ -158,15 +158,6 @@ export default function CartScreen() {
             return;
         }
 
-        // Save booking details to AsyncStorage
-        await setBookingDetails({
-            problems: selectedProblems,
-            message: message,
-            serviceDate: selectedDate.toISOString().split('T')[0],
-            serviceTime: selectedTime,
-            address: selectedAddress.address,
-        });
-
         const payload = {
             cart_items: items,
             address_id: selectedAddress.id,
@@ -199,16 +190,36 @@ export default function CartScreen() {
     }, []);
 
     // Load saved booking details
+    // useEffect(() => {
+    //     if (bookingDetails) {
+    //         setSelectedProblems(bookingDetails.problems);
+    //         setMessage(bookingDetails.message);
+    //         setSelectedDate(new Date(bookingDetails.serviceDate));
+    //         setSelectedTime(bookingDetails.serviceTime);
+    //     }
+    // }, [bookingDetails]);
+    
     useEffect(() => {
-        if (bookingDetails) {
-            setSelectedProblems(bookingDetails.problems);
-            setMessage(bookingDetails.message);
-            setSelectedDate(new Date(bookingDetails.serviceDate));
-            setSelectedTime(bookingDetails.serviceTime);
+        if (bookingProblems) {
+            setSelectedProblems(bookingProblems.problems);
+            setMessage(bookingProblems.message);
         }
-    }, [bookingDetails]);
+    }, [bookingProblems]);
+
+    useEffect(() => {
+        if (bookingSchedule) {
+            setSelectedDate(new Date(bookingSchedule.serviceDate));
+            setSelectedTime(bookingSchedule.serviceTime);
+        }
+    }, [bookingSchedule]);
 
     const handleSaveProblems = () => {
+        // Save booking details to AsyncStorage
+        setBookingProblems({
+            problems: selectedProblems,
+            message: message,
+        });
+        
         setShowProblemModal(false);
     };
 
@@ -217,6 +228,10 @@ export default function CartScreen() {
             alert('Please select both date and time');
             return;
         }
+        setBookingSchedule({
+            serviceDate: selectedDate.toISOString().split('T')[0],
+            serviceTime: selectedTime,
+        });
         setShowScheduleModal(false);
     };
 

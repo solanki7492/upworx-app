@@ -33,6 +33,7 @@ export interface CreateAddressRequest {
     longitude: string;
     city: string;
     state: string;
+    default_address?: number;
     address_type: 'home' | 'work' | 'other';
 }
 

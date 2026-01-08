@@ -15,6 +15,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    Switch
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -39,6 +40,7 @@ export default function AddressesScreen() {
         address_line_2: '',
         city: '',
         state: '',
+        default_address: 0,
         address_type: 'home' as AddressType,
         latitude: '',
         longitude: '',
@@ -172,6 +174,7 @@ export default function AddressesScreen() {
             address_line_2: '',
             city: '',
             state: '',
+            default_address: 0,
             address_type: 'home',
             latitude: '',
             longitude: '',
@@ -189,6 +192,7 @@ export default function AddressesScreen() {
             address_line_2: address.address_line_2,
             city: address.city,
             state: address.state,
+            default_address: address.default_address ?? 0,
             address_type: address.address_type,
             latitude: address.latitude.toString(),
             longitude: address.longitude.toString(),
@@ -231,8 +235,10 @@ export default function AddressesScreen() {
                 state: formData.state,
                 latitude: formData.latitude,
                 longitude: formData.longitude,
+                default_address: formData.default_address,
                 address_type: formData.address_type,
             };
+            console.log('Submitting address:', requestData);
 
             if (editingAddress) {
                 await updateAddress(editingAddress.id, requestData);
@@ -462,6 +468,15 @@ export default function AddressesScreen() {
                                 editable={false}
                                 placeholder="Auto-filled from pincode"
                                 placeholderTextColor={BrandColors.mutedText}
+                            />
+                        </View>
+                        {/* Set Default Address */}
+                        <View style={styles.switchInputContainer}>
+                            <Text style={styles.inputLabel}>Set as Default Address</Text>
+                            <Switch
+                                value={formData.default_address === 1}
+                                onValueChange={(value) => setFormData((prev) => ({ ...prev, default_address: value ? 1 : 0 }))}
+                                trackColor={{ false: BrandColors.border, true: BrandColors.primary }}
                             />
                         </View>
 
@@ -727,5 +742,11 @@ const styles = StyleSheet.create({
         color: BrandColors.card,
         fontSize: 16,
         fontWeight: '700',
+    },
+    switchInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 20,
     },
 });

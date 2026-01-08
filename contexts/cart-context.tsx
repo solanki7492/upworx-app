@@ -20,6 +20,16 @@ interface BookingDetails {
     address: string;
 }
 
+interface BookingProblem {
+    problems: string[];
+    message: string;
+}
+
+interface BookingSchedule{
+    serviceDate: string;
+    serviceTime: string;
+}
+
 interface CartContextType {
     items: CartItem[];
     addItem: (item: Omit<CartItem, 'qty'>) => void;
@@ -29,8 +39,12 @@ interface CartContextType {
     totalItems: number;
     totalPrice: number;
     categorySlug: string | null;
+    bookingProblems: BookingProblem | null;
+    bookingSchedule: BookingSchedule | null;
     bookingDetails: BookingDetails | null;
     setBookingDetails: (details: BookingDetails) => void;
+    setBookingProblems: (problems: BookingProblem) => void;
+    setBookingSchedule: (schedule: BookingSchedule) => void;
     clearBookingDetails: () => void;
 }
 
@@ -40,6 +54,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
     const [categorySlug, setCategorySlug] = useState<string | null>(null);
     const [bookingDetails, setBookingDetailsState] = useState<BookingDetails | null>(null);
+    const [bookingProblems, setBookingProblemsState] = useState<BookingProblem | null>(null);
+    const [bookingSchedule, setBookingScheduleState] = useState<BookingSchedule | null>(null);
+    const [bookingMeta, setBookingMeta] = useState({ l2: null, l3: null });
 
     // Load cart from AsyncStorage on mount
     useEffect(() => {
@@ -73,6 +90,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             }
         } catch (error) {
             console.error('Error loading booking details:', error);
+        }
+    };
+
+    const loadBookingProblems = async () => {
+        try {
+            const data = await AsyncStorage.getItem(BOOKING_DETAILS_KEY);
+            if (data) {
+                setBookingProblemsState(JSON.parse(data));
+            }
+        } catch (error) {
+            console.error('Error loading booking problems:', error);
+        }
+    };
+
+    const loadBookingSchedule = async () => {
+        try {
+            const data = await AsyncStorage.getItem(BOOKING_DETAILS_KEY);
+            if (data) {
+                setBookingScheduleState(JSON.parse(data));
+            }
+        } catch (error) {
+            console.error('Error loading booking schedule:', error);
         }
     };
 
@@ -112,6 +151,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             // Clear category slug if cart is empty
             if (newItems.length === 0) {
                 setCategorySlug(null);
+                clearBookingDetails();
+                clearBookingProblems();
+                clearBookingSchedule();
             }
 
             return newItems;
@@ -150,6 +192,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const setBookingProblems = async (problems: BookingProblem) => {
+        setBookingProblemsState(problems);
+        try {
+            await AsyncStorage.setItem(BOOKING_DETAILS_KEY, JSON.stringify(problems));
+        } catch (error) {
+            console.error('Error saving booking problems:', error);
+        }
+    };
+    
+    const setBookingSchedule = async (schedule: BookingSchedule) => {
+        setBookingScheduleState(schedule);
+        try {
+            await AsyncStorage.setItem(BOOKING_DETAILS_KEY, JSON.stringify(schedule));
+        } catch (error) {
+            console.error('Error saving booking schedule:', error);
+        }
+    };
+
     const clearBookingDetails = async () => {
         setBookingDetailsState(null);
         try {
@@ -159,12 +219,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const clearBookingProblems = async () => {
+        setBookingProblemsState(null);
+        try {
+            await AsyncStorage.removeItem(BOOKING_DETAILS_KEY);
+        } catch (error) {
+            console.error('Error clearing booking problems:', error);
+        }
+    };
+    
+    const clearBookingSchedule = async () => {
+        setBookingScheduleState(null);
+        try {
+            await AsyncStorage.removeItem(BOOKING_DETAILS_KEY);
+        } catch (error) {
+            console.error('Error clearing booking schedule:', error);
+        }
+    };
+
     const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
     const totalPrice = items.reduce((sum, item) => {
         const price = Number(item.price) || 0;
         const qty = Number(item.qty) || 0;
         return sum + price * qty;
-        }, 0);
+    }, 0);
 
     return (
         <CartContext.Provider
@@ -178,7 +256,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 totalPrice,
                 categorySlug,
                 bookingDetails,
+                bookingProblems,
+                bookingSchedule,
                 setBookingDetails,
+                setBookingProblems,
+                setBookingSchedule,
                 clearBookingDetails,
             }}
         >
