@@ -1,3 +1,4 @@
+import CartBar from '@/components/cart-bar';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -146,6 +147,7 @@ export default function OrdersScreen() {
                     </TouchableOpacity>
                 ))}
             </ScrollView>
+            <CartBar />
         </View>
     );
 }

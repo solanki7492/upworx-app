@@ -50,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = async () => {
         try {
             await StorageService.clearAuth();
+            await StorageService.clearAll();
             setUser(null);
         } catch (error) {
             console.error('Error logging out:', error);

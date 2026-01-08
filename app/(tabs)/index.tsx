@@ -1,3 +1,4 @@
+import CartBar from '@/components/cart-bar';
 import { CitySelectionModal } from '@/components/city-selection-modal';
 import { OfferStack } from '@/components/home/layered-carousel';
 import { SearchBar } from '@/components/home/search-bar';
@@ -161,6 +162,7 @@ export default function HomeScreen() {
         />
 
       </ScrollView>
+      <CartBar />
     </View>
   );
 }

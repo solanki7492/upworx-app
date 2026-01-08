@@ -2,10 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Storage keys
 export const STORAGE_KEYS = {
-    ACCESS_TOKEN: '@mockmate/access_token',
-    REFRESH_TOKEN: '@mockmate/refresh_token',
-    USER_DATA: '@mockmate/user_data',
-    HAS_SEEN_ONBOARDING: '@mockmate/has_seen_onboarding',
+    ACCESS_TOKEN: '@upworx/access_token',
+    REFRESH_TOKEN: '@upworx/refresh_token',
+    USER_DATA: '@upworx/user_data',
     SELECTED_CITY: '@upworx/selected_city',
 } as const;
 

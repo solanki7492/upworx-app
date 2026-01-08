@@ -1,20 +1,21 @@
 import { Capsule } from '@/components/booking/capsule';
-import { CartBar } from '@/components/booking/cart-bar';
 import { ServiceRow } from '@/components/booking/service-row';
 import { SkeletonCapsule } from '@/components/booking/skeleton-capsule';
-import { useAuth } from '@/contexts/auth-context';
+import CartBar from '@/components/cart-bar';
+import { useCart } from '@/contexts/cart-context';
 import { getCapacities, getServices, getType } from '@/lib/services/booking';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BookingScreen() {
     const { slug, serviceName, city } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { addItem, removeItem, items: cartItems } = useCart();
 
     const [types, setTypes] = useState<any[]>([]);
     const [capacities, setCapacities] = useState<any[]>([]);
@@ -26,8 +27,6 @@ export default function BookingScreen() {
 
     const [selectedType, setSelectedType] = useState<any>(null);
     const [selectedCapacity, setSelectedCapacity] = useState<any>(null);
-
-    const [cart, setCart] = useState<any[]>([]);
 
     useEffect(() => {
         loadBooking(city as string, slug as string);
@@ -43,7 +42,6 @@ export default function BookingScreen() {
     const handleTypeSelect = async (type: any) => {
         setSelectedType(type);
         setSelectedCapacity(null);
-        setCart([]);
         setServices([]);
 
         if (type.has_capacity) {
@@ -61,7 +59,6 @@ export default function BookingScreen() {
 
     const handleCapacitySelect = async (capacity: any) => {
         setSelectedCapacity(capacity);
-        setCart([]);
 
         setLoadingServices(true);
         const data = await getServices(capacity.id, city as string);
@@ -70,11 +67,11 @@ export default function BookingScreen() {
     };
 
     const toggleService = (service: any) => {
-        const exists = cart.find(i => i.id === service.id);
+        const exists = cartItems.find(i => i.id === service.id);
         if (exists) {
-            setCart(cart.filter(i => i.id !== service.id));
+            removeItem(service.id);
         } else {
-            setCart([...cart, { ...service, qty: 1 }]);
+            addItem({ ...service, categorySlug: slug as string });
         }
     };
 
@@ -151,33 +148,29 @@ export default function BookingScreen() {
                             </View>
                         ) : (
                             <ScrollView showsVerticalScrollIndicator={false}>
-                                {services.map(s => (
+                                {services.map(s => {
+                                const normalizedService = {
+                                    ...s,
+                                    price: Number(s.price) || 0,
+                                };
+
+                                return (
                                     <ServiceRow
-                                        key={s.id}
-                                        service={s}
-                                        selected={cart.some(i => i.id === s.id)}
-                                        onToggle={() => toggleService(s)}
+                                    key={normalizedService.id}
+                                    service={normalizedService}
+                                    selected={cartItems.some(i => i.id === normalizedService.id)}
+                                    onToggle={() => toggleService(normalizedService)}
                                     />
-                                ))}
+                                );
+                                })}
                             </ScrollView>
                         )}
                     </View>
                 </>
             )}
 
-            {/* CART BAR */}
-            {cart.length > 0 && (
-                <CartBar
-                    count={cart.length}
-                    total={cart.reduce((t, i) => t + i.price * i.qty, 0)}
-                    onView={() =>
-                        router.push({
-                            pathname: '/(cart)',
-                            params: { cart: encodeURIComponent(JSON.stringify(cart)) }
-                        })
-                    }
-                />
-            )}
+            {/* Empty state handled by CartBar component */}
+            <CartBar />
         </View>
     );
 }

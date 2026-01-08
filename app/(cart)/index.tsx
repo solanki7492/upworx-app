@@ -1,34 +1,190 @@
+import { useCart } from '@/contexts/cart-context';
 import { getAddresses } from '@/lib/services/address';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const problemOptions: Record<string, string[]> = {
+    'ac': ['Over Heating', 'Water Leakage', 'Slow cooling', 'Abnormal Sound', 'Dirty air filters'],
+    'refrigerator': ['Not Cooling', 'Water Leakage', 'Door-related issues', 'Temperature issues', 'Loud noise'],
+    'washing-machine': ['Smells Bad', 'Leaves Marks', 'Water Leaking', "Won't spin", 'Electrical issues'],
+    'tv': ['Screen Issues', 'HDMI Port', 'Installation', 'Audio Problems', 'Software Updates'],
+    'geyser': ['Water leakage', 'No Hot Water', 'Strange Noises', 'Low Water Pressure', 'Foul odor'],
+    'air-cooler': ['Water Leak', 'Slow performance', 'Motor Winding', 'Grass change', 'Noise/Cleaning'],
+    'electric-fan': ['Slow performance', 'Motor Winding', 'Burnt Capacitor', 'Noise', 'Blade Issues'],
+    'plumber': ['Damaged fixtures', 'Drain cleaning', 'Pipe Line repair', 'Renovating', 'Sewer cleaning'],
+    'electrician': ['Motor Winding', 'Lighting/Wiring Setup', 'Appliance Hookups', 'Home Automation'],
+    'carpenter': ['Counters', 'Custom furniture', 'Doors and windows', 'Cutting wood', 'Roofing sheet'],
+    'water-purifier': ['Noise Issues', 'RO Membrane issues', 'Bad Taste of Water', 'Auto Shut-Off Failure'],
+    'cctv-camera': ['Burglar alarms', 'Motion Sensor', 'Poor video quality', 'Connectivity Issues'],
+    'mobile-phone': ['Battery replacement', 'Microphone/speaker', 'Touchscreen issues', 'Overheating'],
+    'computer': ['Battery Issues', 'Display Issues', 'Overheating', 'Fan noise', 'Keyboard issues'],
+};
+
+// Generate time slots from 08:00 AM to 09:00 PM (30 min intervals)
+const generateTimeSlots = () => {
+    const slots: string[] = [];
+    for (let hour = 8; hour <= 21; hour++) {
+        for (let min = 0; min < 60; min += 30) {
+            if (hour === 21 && min > 0) break; // Stop at 09:00 PM
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+            const formattedMin = min.toString().padStart(2, '0');
+            slots.push(`${displayHour.toString().padStart(2, '0')}:${formattedMin} ${period}`);
+        }
+    }
+    return slots;
+};
+
+const TIME_SLOTS = generateTimeSlots();
+
+// Generate next 4 days
+const getNext4Days = () => {
+    const days = [];
+    for (let i = 0; i < 4; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        days.push(date);
+    }
+    return days;
+};
+
 export default function CartScreen() {
-    const { cart } = useLocalSearchParams();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { items, updateQty: updateCartQty, totalPrice, categorySlug, bookingDetails, setBookingDetails } = useCart();
     const [addresses, setAddresses] = useState<any[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
     const [showAddressList, setShowAddressList] = useState(false);
 
-    const [items, setItems] = useState(
-        cart ? JSON.parse(decodeURIComponent(cart as string)) : []
-    );
+    // Modal states
+    const [showProblemModal, setShowProblemModal] = useState(false);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+    // Problem / Message state
+    const [selectedProblems, setSelectedProblems] = useState<string[]>([]);
+    const [message, setMessage] = useState('');
+
+    // Schedule state
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
+    const availableDays = getNext4Days();
 
     const updateQty = (id: number, delta: number) => {
-        setItems((prev: any[]) => {
-            const newItems = prev.map(i =>
-                i.id === id ? { ...i, qty: i.qty + delta } : i
-            );
-            // Remove items with qty <= 0
-            return newItems.filter(i => i.qty > 0);
-        });
+        updateCartQty(id, delta);
     };
 
-    const total = items.reduce((t: number, i: any) => t + i.price * i.qty, 0);
+    const total = totalPrice;
+
+    const toggleProblem = (problem: string) => {
+        setSelectedProblems(prev =>
+            prev.includes(problem)
+                ? prev.filter(p => p !== problem)
+                : [...prev, problem]
+        );
+    };
+
+    const isTimeSlotDisabled = (timeSlot: string): boolean => {
+        // Only disable if selected date is today
+        const today = new Date();
+        const isToday =
+            selectedDate.getDate() === today.getDate() &&
+            selectedDate.getMonth() === today.getMonth() &&
+            selectedDate.getFullYear() === today.getFullYear();
+
+        if (!isToday) return false;
+
+        // Parse time slot
+        const match = timeSlot.match(/(\d{2}):(\d{2}) (AM|PM)/);
+        if (!match) return false;
+
+        let hour = parseInt(match[1]);
+        const min = parseInt(match[2]);
+        const period = match[3];
+
+        if (period === 'PM' && hour !== 12) hour += 12;
+        if (period === 'AM' && hour === 12) hour = 0;
+
+        const slotTime = new Date(today);
+        slotTime.setHours(hour, min, 0, 0);
+
+        return slotTime <= today;
+    };
+
+    const formatDate = (date: Date): string => {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        if (
+            date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()
+        ) {
+            return 'Today';
+        } else if (
+            date.getDate() === tomorrow.getDate() &&
+            date.getMonth() === tomorrow.getMonth() &&
+            date.getFullYear() === tomorrow.getFullYear()
+        ) {
+            return 'Tomorrow';
+        } else {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            return days[date.getDay()];
+        }
+    };
+
+    const formatDateShort = (date: Date): string => {
+        return `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}`;
+    };
+
+    const handleConfirmBooking = async () => {
+        if (!selectedAddress) {
+            alert('Please select a delivery address');
+            return;
+        }
+
+        if (selectedProblems.length === 0) {
+            alert('Please select at least one problem');
+            return;
+        }
+
+        if (!selectedDate || !selectedTime) {
+            alert('Please select service date and time');
+            return;
+        }
+
+        // Save booking details to AsyncStorage
+        await setBookingDetails({
+            problems: selectedProblems,
+            message: message,
+            serviceDate: selectedDate.toISOString().split('T')[0],
+            serviceTime: selectedTime,
+            address: selectedAddress.address,
+        });
+
+        const payload = {
+            cart_items: items,
+            address_id: selectedAddress.id,
+            problems: selectedProblems,
+            message: message,
+            service_date: selectedDate.toISOString().split('T')[0],
+            service_time: selectedTime,
+        };
+
+        console.log('Booking Payload:', payload);
+        // TODO: Call booking API here
+        alert('Booking confirmed! Check console for payload.');
+    };
+
+    // Get problems for current category
+    const currentProblems = categorySlug
+        ? problemOptions[categorySlug as string] || []
+        : [];
 
     useEffect(() => {
         const loadAddresses = async () => {
@@ -41,6 +197,28 @@ export default function CartScreen() {
 
         loadAddresses();
     }, []);
+
+    // Load saved booking details
+    useEffect(() => {
+        if (bookingDetails) {
+            setSelectedProblems(bookingDetails.problems);
+            setMessage(bookingDetails.message);
+            setSelectedDate(new Date(bookingDetails.serviceDate));
+            setSelectedTime(bookingDetails.serviceTime);
+        }
+    }, [bookingDetails]);
+
+    const handleSaveProblems = () => {
+        setShowProblemModal(false);
+    };
+
+    const handleSaveSchedule = () => {
+        if (!selectedDate || !selectedTime) {
+            alert('Please select both date and time');
+            return;
+        }
+        setShowScheduleModal(false);
+    };
 
     const getAddressIcon = (type: string | null) => {
         switch (type) {
@@ -120,6 +298,48 @@ export default function CartScreen() {
                             </View>
                         </View>
 
+                        {/* Problem / Message Section - Clickable Card */}
+                        {currentProblems.length > 0 && (
+                            <TouchableOpacity
+                                style={styles.selectionCard}
+                                activeOpacity={0.7}
+                                onPress={() => setShowProblemModal(true)}
+                            >
+                                <View style={styles.selectionCardLeft}>
+                                    <Ionicons name="alert-circle-outline" size={24} color={BrandColors.primary} />
+                                    <View style={styles.selectionCardText}>
+                                        <Text style={styles.selectionCardTitle}>What's the Problem?</Text>
+                                        <Text style={styles.selectionCardSubtitle}>
+                                            {selectedProblems.length > 0
+                                                ? `${selectedProblems.length} problem${selectedProblems.length > 1 ? 's' : ''} selected`
+                                                : 'Tap to select problems'}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
+                            </TouchableOpacity>
+                        )}
+
+                        {/* Schedule Service Section - Clickable Card */}
+                        <TouchableOpacity
+                            style={styles.selectionCard}
+                            activeOpacity={0.7}
+                            onPress={() => setShowScheduleModal(true)}
+                        >
+                            <View style={styles.selectionCardLeft}>
+                                <Ionicons name="calendar-outline" size={24} color={BrandColors.primary} />
+                                <View style={styles.selectionCardText}>
+                                    <Text style={styles.selectionCardTitle}>Schedule Service</Text>
+                                    <Text style={styles.selectionCardSubtitle}>
+                                        {selectedDate && selectedTime
+                                            ? `${formatDate(selectedDate)}, ${selectedTime}`
+                                            : 'Tap to select date & time'}
+                                    </Text>
+                                </View>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
+                        </TouchableOpacity>
+
                         {/* Notice */}
                         <View style={styles.noticeCard}>
                             <Ionicons name="information-circle-outline" size={20} color={BrandColors.mutedText} />
@@ -158,7 +378,7 @@ export default function CartScreen() {
                     </TouchableOpacity>
 
                     {/* Confirm Button */}
-                    <TouchableOpacity style={styles.bookBtn}>
+                    <TouchableOpacity style={styles.bookBtn} onPress={handleConfirmBooking}>
                         <Text style={styles.bookText}>Confirm Booking</Text>
                         <Ionicons name="checkmark-circle" size={20} color="#fff" />
                     </TouchableOpacity>
@@ -230,6 +450,136 @@ export default function CartScreen() {
                             <Text style={{ color: '#fff', fontWeight: '600' }}>Done</Text>
                         </TouchableOpacity>
 
+                    </View>
+                </View>
+            )}
+
+            {/* Problem / Message Modal */}
+            {showProblemModal && currentProblems.length > 0 && (
+                <View style={styles.addressOverlay}>
+                    <View style={styles.addressModal}>
+                        <Text style={styles.modalTitle}>What's the Problem?</Text>
+                        <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <View style={styles.chipsContainer}>
+                                {currentProblems.map((problem, index) => {
+                                    const isSelected = selectedProblems.includes(problem);
+                                    return (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={[styles.chip, isSelected && styles.chipSelected]}
+                                            onPress={() => toggleProblem(problem)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                                                {problem}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+
+                            <Text style={styles.inputLabel}>Additional Message (Optional)</Text>
+                            <TextInput
+                                style={styles.messageInput}
+                                placeholder="Please enter your message here"
+                                placeholderTextColor={BrandColors.mutedText}
+                                value={message}
+                                onChangeText={setMessage}
+                                multiline
+                                numberOfLines={4}
+                                textAlignVertical="top"
+                            />
+                        </ScrollView>
+
+                        <TouchableOpacity onPress={handleSaveProblems} style={styles.closeBtn}>
+                            <Text style={{ color: '#fff', fontWeight: '600' }}>Done</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
+
+            {/* Schedule Service Modal */}
+            {showScheduleModal && (
+                <View style={styles.addressOverlay}>
+                    <View style={styles.addressModal}>
+                        <Text style={styles.modalTitle}>Schedule Service</Text>
+                        <Text style={styles.sectionSubtitle}>Choose your preferred date and time</Text>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            {/* Date Selector */}
+                            <Text style={styles.inputLabel}>Select Date</Text>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={styles.dateScroll}
+                                contentContainerStyle={styles.dateScrollContent}
+                            >
+                                {availableDays.map((day, index) => {
+                                    const isSelected =
+                                        day.getDate() === selectedDate.getDate() &&
+                                        day.getMonth() === selectedDate.getMonth() &&
+                                        day.getFullYear() === selectedDate.getFullYear();
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={[styles.dateCard, isSelected && styles.dateCardSelected]}
+                                            onPress={() => {
+                                                setSelectedDate(day);
+                                                setSelectedTime(null);
+                                            }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={[styles.dateDay, isSelected && styles.dateDaySelected]}>
+                                                {formatDate(day)}
+                                            </Text>
+                                            <Text style={[styles.dateNum, isSelected && styles.dateNumSelected]}>
+                                                {formatDateShort(day)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
+
+                            {/* Time Slot Grid */}
+                            <Text style={styles.inputLabel}>Select Time Slot</Text>
+                            <View style={styles.timeGrid}>
+                                {TIME_SLOTS.map((slot, index) => {
+                                    const isSelected = selectedTime === slot;
+                                    const isDisabled = isTimeSlotDisabled(slot);
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={[
+                                                styles.timeSlot,
+                                                isSelected && styles.timeSlotSelected,
+                                                isDisabled && styles.timeSlotDisabled,
+                                            ]}
+                                            onPress={() => !isDisabled && setSelectedTime(slot)}
+                                            activeOpacity={0.7}
+                                            disabled={isDisabled}
+                                        >
+                                            <Text
+                                                style={[
+                                                    styles.timeText,
+                                                    isSelected && styles.timeTextSelected,
+                                                    isDisabled && styles.timeTextDisabled,
+                                                ]}
+                                            >
+                                                {slot}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </ScrollView>
+
+                        <TouchableOpacity onPress={handleSaveSchedule} style={styles.closeBtn}>
+                            <Text style={{ color: '#fff', fontWeight: '600' }}>Done</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             )}
@@ -378,6 +728,7 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 12,
         marginBottom: 8,
+        marginTop: 8,
         gap: 12,
         borderWidth: 1,
         borderColor: '#FDE68A',
@@ -392,11 +743,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#EFF6FF',
         padding: 12,
         borderRadius: 12,
-        marginBottom: 120,
+        marginBottom: 150,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8
+        gap: 8,
     },
     bottomBar: {
         position: 'absolute',
@@ -509,5 +860,170 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: BrandColors.mutedText,
         textAlign: 'center',
+    },
+    sectionCard: {
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 12,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: BrandColors.text,
+        marginBottom: 4,
+    },
+    sectionSubtitle: {
+        fontSize: 13,
+        color: BrandColors.mutedText,
+        marginBottom: 16,
+    },
+    chipsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginBottom: 20,
+    },
+    chip: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#F9FAFB',
+    },
+    chipSelected: {
+        borderColor: BrandColors.primary,
+        backgroundColor: '#EFF6FF',
+    },
+    chipText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: BrandColors.text,
+    },
+    chipTextSelected: {
+        color: BrandColors.primary,
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: BrandColors.text,
+        marginBottom: 10,
+        marginTop: 8,
+    },
+    messageInput: {
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 10,
+        padding: 14,
+        fontSize: 14,
+        color: BrandColors.text,
+        minHeight: 100,
+    },
+    dateScroll: {
+        marginBottom: 20,
+    },
+    dateScrollContent: {
+        gap: 10,
+    },
+    dateCard: {
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        alignItems: 'center',
+        minWidth: 90,
+    },
+    dateCardSelected: {
+        backgroundColor: '#EFF6FF',
+        borderColor: BrandColors.primary,
+    },
+    dateDay: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: BrandColors.mutedText,
+        marginBottom: 4,
+    },
+    dateDaySelected: {
+        color: BrandColors.primary,
+    },
+    dateNum: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: BrandColors.text,
+    },
+    dateNumSelected: {
+        color: BrandColors.primary,
+    },
+    timeGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    timeSlot: {
+        flex: 1,
+        minWidth: '30%',
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        borderRadius: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        alignItems: 'center',
+    },
+    timeSlotSelected: {
+        backgroundColor: '#EFF6FF',
+        borderColor: BrandColors.primary,
+    },
+    timeSlotDisabled: {
+        backgroundColor: '#F3F4F6',
+        borderColor: '#E5E7EB',
+        opacity: 0.5,
+    },
+    timeText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: BrandColors.text,
+    },
+    timeTextSelected: {
+        color: BrandColors.primary,
+    },
+    timeTextDisabled: {
+        color: BrandColors.mutedText,
+    },
+    selectionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        padding: 16,
+        borderRadius: 12,
+        marginVertical: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    selectionCardLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
+    },
+    selectionCardText: {
+        flex: 1,
+    },
+    selectionCardTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: BrandColors.text,
+        marginBottom: 4,
+    },
+    selectionCardSubtitle: {
+        fontSize: 13,
+        color: BrandColors.mutedText,
     },
 });

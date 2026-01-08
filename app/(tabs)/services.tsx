@@ -1,3 +1,4 @@
+import CartBar from '@/components/cart-bar';
 import { ServiceSection } from '@/components/home/service-section';
 import { useServices } from '@/lib';
 import { BrandColors } from '@/theme/colors';
@@ -35,6 +36,7 @@ export default function ServicesScreen() {
           <ServiceSection title="All Services" data={services} />
         </ScrollView>
       )}
+      <CartBar />
     </View>
   );
 }
