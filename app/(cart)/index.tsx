@@ -1,11 +1,14 @@
 import { useCart } from '@/contexts/cart-context';
 import { getAddresses } from '@/lib/services/address';
+import { payLater } from '@/lib/services/booking';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import OrderStatusOverlay from '@/components/ui/order-status-overlay';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const problemOptions: Record<string, string[]> = {
     'ac': ['Over Heating', 'Water Leakage', 'Slow cooling', 'Abnormal Sound', 'Dirty air filters'],
@@ -52,33 +55,82 @@ const getNext4Days = () => {
     return days;
 };
 
+const PROBLEMS_KEY = '@cart_problems';
+const MESSAGES_KEY = '@cart_messages';
+const SCHEDULES_KEY = '@cart_schedules';
+
 export default function CartScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { items, updateQty: updateCartQty, totalPrice, categorySlug, bookingProblems, bookingSchedule, setBookingProblems, setBookingSchedule } = useCart();
+    const { orders, updateOrder, removeOrder, clearCart } = useCart();
     const [addresses, setAddresses] = useState<any[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
     const [showAddressList, setShowAddressList] = useState(false);
 
+    // Order expansion state
+    const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+
     // Modal states
     const [showProblemModal, setShowProblemModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
-    // Problem / Message state
+    // Per-order problems and schedules
+    const [orderProblems, setOrderProblems] = useState<Record<string, string[]>>({});
+    const [orderSchedules, setOrderSchedules] = useState<Record<string, { date: Date; time: string }>>({});
+    const [orderMessages, setOrderMessages] = useState<Record<string, string>>({});
+
+    // Temporary editing state
     const [selectedProblems, setSelectedProblems] = useState<string[]>([]);
     const [message, setMessage] = useState('');
-
-    // Schedule state
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    const [orderStatus, setOrderStatus] = useState<null | 'loading' | 'success'>(null);
+    const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
 
     const availableDays = getNext4Days();
 
-    const updateQty = (id: number, delta: number) => {
-        updateCartQty(id, delta);
+    const toggleOrderExpansion = (orderId: string) => {
+        setExpandedOrders((prev) => ({
+            ...prev,
+            [orderId]: !prev[orderId],
+        }));
     };
 
-    const total = totalPrice;
+    useEffect(() => {
+        if (orders.length && Object.keys(expandedOrders).length === 0) {
+            setExpandedOrders({ [orders[0].orderId]: true });
+        }
+    }, [orders]);
+
+    const handleRemoveOrder = (orderId: string) => {
+        Alert.alert('Remove Order', 'Are you sure you want to remove this order from cart?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Remove',
+                style: 'destructive',
+                onPress: () => {
+                    removeOrder(orderId);
+                    // Clean up associated data
+                    setOrderProblems((prev) => {
+                        const updated = { ...prev };
+                        delete updated[orderId];
+                        return updated;
+                    });
+                    setOrderSchedules((prev) => {
+                        const updated = { ...prev };
+                        delete updated[orderId];
+                        return updated;
+                    });
+                    setExpandedOrders((prev) => {
+                        const updated = { ...prev };
+                        delete updated[orderId];
+                        return updated;
+                    });
+                },
+            },
+        ]);
+    };
 
     const toggleProblem = (problem: string) => {
         setSelectedProblems(prev =>
@@ -89,7 +141,6 @@ export default function CartScreen() {
     };
 
     const isTimeSlotDisabled = (timeSlot: string): boolean => {
-        // Only disable if selected date is today
         const today = new Date();
         const isToday =
             selectedDate.getDate() === today.getDate() &&
@@ -98,7 +149,6 @@ export default function CartScreen() {
 
         if (!isToday) return false;
 
-        // Parse time slot
         const match = timeSlot.match(/(\d{2}):(\d{2}) (AM|PM)/);
         if (!match) return false;
 
@@ -115,9 +165,20 @@ export default function CartScreen() {
         return slotTime <= today;
     };
 
-    const formatDate = (date: Date): string => {
+    const normalizeDate = (input: any): Date | null => {
+        if (!input) return null;
+        if (input instanceof Date) return input;
+
+        const d = new Date(input);
+        return isNaN(d.getTime()) ? null : d;
+    };
+
+    const formatDate = (input: any): string => {
+        const date = normalizeDate(input);
+        if (!date) return '';
+
         const today = new Date();
-        const tomorrow = new Date(today);
+        const tomorrow = new Date();
         tomorrow.setDate(today.getDate() + 1);
 
         if (
@@ -126,113 +187,203 @@ export default function CartScreen() {
             date.getFullYear() === today.getFullYear()
         ) {
             return 'Today';
-        } else if (
+        }
+
+        if (
             date.getDate() === tomorrow.getDate() &&
             date.getMonth() === tomorrow.getMonth() &&
             date.getFullYear() === tomorrow.getFullYear()
         ) {
             return 'Tomorrow';
-        } else {
-            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            return days[date.getDay()];
         }
+
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return days[date.getDay()];
     };
 
     const formatDateShort = (date: Date): string => {
         return `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}`;
     };
 
-    const handleConfirmBooking = async () => {
-        if (!selectedAddress) {
-            alert('Please select a delivery address');
-            return;
-        }
+    const formatDateForAPI = (input: any): string => {
+        const date = normalizeDate(input);
+        if (!date) return '';
 
-        if (selectedProblems.length === 0) {
-            alert('Please select at least one problem');
-            return;
-        }
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
 
-        if (!selectedDate || !selectedTime) {
-            alert('Please select service date and time');
-            return;
-        }
-
-        const payload = {
-            cart_items: items,
-            address_id: selectedAddress.id,
-            problems: selectedProblems,
-            message: message,
-            service_date: selectedDate.toISOString().split('T')[0],
-            service_time: selectedTime,
-        };
-
-        console.log('Booking Payload:', payload);
-        // TODO: Call booking API here
-        alert('Booking confirmed! Check console for payload.');
+        return `${dd}/${mm}/${yyyy}`;
     };
 
-    // Get problems for current category
-    const currentProblems = categorySlug
-        ? problemOptions[categorySlug as string] || []
-        : [];
+    const loadOrderMetaIntoModal = (orderId: string) => {
+        setActiveOrderId(orderId);
 
-    useEffect(() => {
-        const loadAddresses = async () => {
-            const data = await getAddresses();
-            setAddresses(data);
+        // Load problems & message
+        setSelectedProblems(orderProblems[orderId] || []);
+        setMessage(orderMessages[orderId] || '');
 
-            const defaultAddr = data.find(a => a.default_address === 1);
-            setSelectedAddress(defaultAddr || data[0]);
-        };
-
-        loadAddresses();
-    }, []);
-
-    // Load saved booking details
-    // useEffect(() => {
-    //     if (bookingDetails) {
-    //         setSelectedProblems(bookingDetails.problems);
-    //         setMessage(bookingDetails.message);
-    //         setSelectedDate(new Date(bookingDetails.serviceDate));
-    //         setSelectedTime(bookingDetails.serviceTime);
-    //     }
-    // }, [bookingDetails]);
-    
-    useEffect(() => {
-        if (bookingProblems) {
-            setSelectedProblems(bookingProblems.problems);
-            setMessage(bookingProblems.message);
+        // Load schedule
+        const schedule = orderSchedules[orderId];
+        if (schedule) {
+            setSelectedDate(new Date(schedule.date));
+            setSelectedTime(schedule.time);
+        } else {
+            setSelectedDate(availableDays[0]);
+            setSelectedTime(null);
         }
-    }, [bookingProblems]);
-
-    useEffect(() => {
-        if (bookingSchedule) {
-            setSelectedDate(new Date(bookingSchedule.serviceDate));
-            setSelectedTime(bookingSchedule.serviceTime);
-        }
-    }, [bookingSchedule]);
+    };
 
     const handleSaveProblems = () => {
-        // Save booking details to AsyncStorage
-        setBookingProblems({
-            problems: selectedProblems,
-            message: message,
-        });
-        
+        if (activeOrderId) {
+            setOrderProblems((prev) => ({
+                ...prev,
+                [activeOrderId]: selectedProblems,
+            }));
+            setOrderMessages((prev) => ({
+                ...prev,
+                [activeOrderId]: message,
+            }));
+        }
         setShowProblemModal(false);
+        setActiveOrderId(null);
+        setSelectedProblems([]);
+        setMessage('');
     };
 
     const handleSaveSchedule = () => {
         if (!selectedDate || !selectedTime) {
-            alert('Please select both date and time');
+            Alert.alert('Error', 'Please select both date and time');
             return;
         }
-        setBookingSchedule({
-            serviceDate: selectedDate.toISOString().split('T')[0],
-            serviceTime: selectedTime,
-        });
+        if (activeOrderId) {
+            setOrderSchedules((prev) => ({
+                ...prev,
+                [activeOrderId]: { date: selectedDate, time: selectedTime },
+            }));
+        }
         setShowScheduleModal(false);
+        setActiveOrderId(null);
+    };
+
+    useEffect(() => {
+        (async () => {
+            const [p, m, s] = await Promise.all([
+                AsyncStorage.getItem(PROBLEMS_KEY),
+                AsyncStorage.getItem(MESSAGES_KEY),
+                AsyncStorage.getItem(SCHEDULES_KEY),
+            ]);
+
+            if (p) setOrderProblems(JSON.parse(p));
+            if (m) setOrderMessages(JSON.parse(m));
+            if (s) setOrderSchedules(JSON.parse(s));
+        })();
+    }, []);
+
+    useEffect(() => {
+        AsyncStorage.setItem(PROBLEMS_KEY, JSON.stringify(orderProblems));
+    }, [orderProblems]);
+
+    useEffect(() => {
+        AsyncStorage.setItem(MESSAGES_KEY, JSON.stringify(orderMessages));
+    }, [orderMessages]);
+
+    useEffect(() => {
+        AsyncStorage.setItem(SCHEDULES_KEY, JSON.stringify(orderSchedules));
+    }, [orderSchedules]);
+
+    const clearAllCartMeta = async () => {
+        setOrderProblems({});
+        setOrderMessages({});
+        setOrderSchedules({});
+        setExpandedOrders({});
+
+        await Promise.all([
+            AsyncStorage.removeItem('@cart_problems'),
+            AsyncStorage.removeItem('@cart_messages'),
+            AsyncStorage.removeItem('@cart_schedules'),
+        ]);
+    };
+
+    const handleConfirmBooking = async () => {
+        if (!selectedAddress) {
+            Alert.alert('Error', 'Please select a delivery address');
+            return;
+        }
+
+        // Validate all orders have problems and schedules
+        for (const order of orders) {
+            if (problemOptions[order.mainService.slug]?.length > 0 && !orderProblems[order.orderId]?.length) {
+                Alert.alert('Error', `Please select problems for ${order.mainService.name}`);
+                return;
+            }
+            if (!orderSchedules[order.orderId]) {
+                Alert.alert('Error', `Please select schedule for ${order.mainService.name}`);
+                return;
+            }
+        }
+
+        setOrderStatus('loading');
+
+        try {
+            const payload = {
+                service: orders.map((order) => {
+                    const schedule = orderSchedules[order.orderId];
+                    const problems = orderProblems[order.orderId] || [];
+                    const customMessage = orderMessages[order.orderId] || '';
+
+                    // Format message as: (problem1, problem2) custom message
+                    let formattedMessage = '';
+                    if (problems.length > 0) {
+                        formattedMessage = `(${problems.join(', ')})`;
+                    }
+                    if (customMessage) {
+                        formattedMessage = formattedMessage ? `${formattedMessage} ${customMessage}` : customMessage;
+                    }
+
+                    return {
+                        id: order.mainService.id,
+                        name: order.mainService.name,
+                        slug: order.mainService.slug,
+                        service_date: formatDateForAPI(schedule.date),
+                        service_time: schedule.time,
+                        repair_text: null,
+                        message: formattedMessage,
+                        services: order.services.map((s: any) => ({
+                            id: s.id,
+                            service: s.service,
+                            qty: s.qty,
+                            price: s.price,
+                            note: s.note || null,
+                            l2: s.l2,
+                            l3: s.l3,
+                        })),
+                        total_service: order.totalServiceCount,
+                        total_quantity: order.totalQuantity,
+                        total_service_price: order.totalPrice,
+                    };
+                }),
+                address_id: selectedAddress.id,
+            };
+
+            const response = await payLater(payload);
+
+            if (response && response.status) {
+                clearCart();
+                await clearAllCartMeta();
+
+                setOrderStatus('success');
+                setConfirmedOrderId(response.order_id);
+
+                setTimeout(() => {
+                    setOrderStatus(null);
+                    router.push('/(tabs)');
+                }, 3000);
+            }
+
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to confirm booking');
+        }
     };
 
     const getAddressIcon = (type: string | null) => {
@@ -246,6 +397,19 @@ export default function CartScreen() {
         }
     };
 
+    useEffect(() => {
+        const loadAddresses = async () => {
+            const data = await getAddresses();
+            setAddresses(data);
+
+            const defaultAddr = data.find(a => a.default_address === 1);
+            setSelectedAddress(defaultAddr || data[0]);
+        };
+
+        loadAddresses();
+    }, []);
+
+
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* Header */}
@@ -257,103 +421,209 @@ export default function CartScreen() {
             </View>
 
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                {items.length === 0 ? (
+                {orders.length === 0 ? (
                     <View style={styles.emptyCart}>
                         <Ionicons name="cart-outline" size={80} color={BrandColors.mutedText} />
                         <Text style={styles.emptyText}>Your cart is empty</Text>
                     </View>
                 ) : (
                     <>
-                        {/* Cart Items */}
-                        <View style={styles.itemsContainer}>
-                            {items.map((item: any) => (
-                                <View key={item.id} style={styles.itemCard}>
-                                    <View style={styles.itemInfo}>
-                                        <Text style={styles.itemName}>{item.name}</Text>
-                                        <Text style={styles.itemPrice}>₹ {item.price.toLocaleString()}</Text>
-                                    </View>
+                        {/* Order Cards */}
+                        {orders.map((order: any) => {
+                            const isExpanded = expandedOrders[order.orderId] || false;
+                            const hasProblems = orderProblems[order.orderId]?.length > 0;
+                            const hasSchedule = orderSchedules[order.orderId]?.date && orderSchedules[order.orderId]?.time;
 
-                                    <View style={styles.qtyControl}>
-                                        <TouchableOpacity
-                                            onPress={() => updateQty(item.id, -1)}
-                                            style={styles.qtyBtn}
-                                        >
-                                            <Ionicons name="remove" size={18} color={BrandColors.primary} />
-                                        </TouchableOpacity>
+                            return (
+                                <View key={order.orderId} style={styles.orderCard}>
+                                    {/* Order Header */}
+                                    <TouchableOpacity
+                                        style={styles.orderHeader}
+                                        onPress={() => toggleOrderExpansion(order.orderId)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.orderHeaderLeft}>
+                                            <Ionicons name="cube-outline" size={24} color={BrandColors.primary} />
+                                            <View>
+                                                <Text style={styles.orderTitle}>{order.mainService.name}</Text>
+                                                <Text style={styles.orderSubtitle}>
+                                                    {order.totalQuantity} item(s) • ₹{order.totals.grandTotal.toLocaleString()}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.orderHeaderRight}>
+                                            <TouchableOpacity
+                                                onPress={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRemoveOrder(order.orderId);
+                                                }}
+                                                style={styles.removeBtn}
+                                            >
+                                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                            </TouchableOpacity>
+                                            <Ionicons
+                                                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                                size={20}
+                                                color={BrandColors.mutedText}
+                                            />
+                                        </View>
+                                    </TouchableOpacity>
 
-                                        <Text style={styles.qtyText}>{item.qty}</Text>
+                                    {/* Order Details - Expandable */}
+                                    {isExpanded && (
+                                        <View style={styles.orderDetails}>
+                                            {/* Services List */}
+                                            {order.services.map((service: any, idx: number) => (
+                                                <View key={idx} style={styles.serviceItemRow}>
+                                                    <View style={styles.serviceInfo}>
+                                                        <Text style={styles.serviceName}>{service.service}</Text>
+                                                        <Text style={styles.servicePrice}>₹{service.price}/unit</Text>
+                                                    </View>
+                                                    <View style={styles.qtyControl}>
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                const updatedServices = [...order.services];
+                                                                const currentQty = parseInt(service.qty);
+                                                                if (currentQty > 1) {
+                                                                    updatedServices[idx] = { ...service, qty: String(currentQty - 1) };
+                                                                    const newTotalQty = updatedServices.reduce((sum, s) => sum + parseInt(s.qty), 0);
+                                                                    const newTotalPrice = updatedServices.reduce((sum, s) => sum + (parseInt(s.price) * parseInt(s.qty)), 0);
+                                                                    updateOrder(order.orderId, {
+                                                                        services: updatedServices,
+                                                                        totalQuantity: newTotalQty,
+                                                                        totalPrice: newTotalPrice,
+                                                                        totals: {
+                                                                            subtotal: newTotalPrice,
+                                                                            discount: 0,
+                                                                            tax: 0,
+                                                                            grandTotal: newTotalPrice,
+                                                                        },
+                                                                    });
+                                                                }
+                                                            }}
+                                                            style={styles.qtyBtn}
+                                                        >
+                                                            <Ionicons name="remove" size={18} color={BrandColors.primary} />
+                                                        </TouchableOpacity>
+                                                        <Text style={styles.qtyText}>{service.qty}</Text>
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                const updatedServices = [...order.services];
+                                                                const currentQty = parseInt(service.qty);
+                                                                updatedServices[idx] = { ...service, qty: String(currentQty + 1) };
+                                                                const newTotalQty = updatedServices.reduce((sum, s) => sum + parseInt(s.qty), 0);
+                                                                const newTotalPrice = updatedServices.reduce((sum, s) => sum + (parseInt(s.price) * parseInt(s.qty)), 0);
+                                                                updateOrder(order.orderId, {
+                                                                    services: updatedServices,
+                                                                    totalQuantity: newTotalQty,
+                                                                    totalPrice: newTotalPrice,
+                                                                    totals: {
+                                                                        subtotal: newTotalPrice,
+                                                                        discount: 0,
+                                                                        tax: 0,
+                                                                        grandTotal: newTotalPrice,
+                                                                    },
+                                                                });
+                                                            }}
+                                                            style={styles.qtyBtn}
+                                                        >
+                                                            <Ionicons name="add" size={18} color={BrandColors.primary} />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                    <Text style={styles.serviceTotal}>₹{(parseInt(service.price) * parseInt(service.qty)).toLocaleString()}</Text>
+                                                </View>
+                                            ))}
 
-                                        <TouchableOpacity
-                                            onPress={() => updateQty(item.id, 1)}
-                                            style={styles.qtyBtn}
-                                        >
-                                            <Ionicons name="add" size={18} color={BrandColors.primary} />
-                                        </TouchableOpacity>
-                                    </View>
+                                            {/* Problem Selection for this Order */}
+                                            {problemOptions[order.mainService.slug]?.length > 0 && (
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.selectionCard,
+                                                        hasProblems && styles.selectionCardActive,
+                                                    ]}
+                                                    activeOpacity={0.7}
+                                                    onPress={() => {
+                                                        setActiveOrderId(order.orderId);
+                                                        setShowProblemModal(true);
+                                                        loadOrderMetaIntoModal(order.orderId);
+                                                    }}
+                                                >
+                                                    <View style={styles.selectionCardLeft}>
+                                                        <Ionicons
+                                                            name="alert-circle-outline"
+                                                            size={24}
+                                                            color={hasProblems ? BrandColors.primary : BrandColors.mutedText}
+                                                        />
+                                                        <View style={styles.selectionCardText}>
+                                                            <Text style={styles.selectionCardTitle}>What's the Problem?</Text>
+                                                            <Text style={styles.selectionCardSubtitle}>
+                                                                {hasProblems
+                                                                    ? `${orderProblems[order.orderId].length} problem(s) selected`
+                                                                    : 'Tap to select problems'}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                    <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
+                                                </TouchableOpacity>
+                                            )}
 
-                                    <Text style={styles.itemTotal}>₹ {(item.price * item.qty).toLocaleString()}</Text>
+                                            {/* Schedule Selection for this Order */}
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.selectionCard,
+                                                    hasSchedule && styles.selectionCardActive,
+                                                ]}
+                                                activeOpacity={0.7}
+                                                onPress={() => {
+                                                    setActiveOrderId(order.orderId);
+                                                    setShowScheduleModal(true);
+                                                    loadOrderMetaIntoModal(order.orderId);
+                                                }}
+                                            >
+                                                <View style={styles.selectionCardLeft}>
+                                                    <Ionicons
+                                                        name="calendar-outline"
+                                                        size={24}
+                                                        color={hasSchedule ? BrandColors.primary : BrandColors.mutedText}
+                                                    />
+                                                    <View style={styles.selectionCardText}>
+                                                        <Text style={styles.selectionCardTitle}>Schedule Service</Text>
+                                                        <Text style={styles.selectionCardSubtitle}>
+                                                            {hasSchedule
+                                                                ? `${formatDate(orderSchedules[order.orderId].date)}, ${orderSchedules[order.orderId].time}`
+                                                                : 'Tap to select date & time'}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                                <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
                                 </View>
-                            ))}
-                        </View>
+                            );
+                        })}
 
-                        {/* Bill Summary */}
+                        {/* Grand Total Summary */}
                         <View style={styles.summaryCard}>
-                            <Text style={styles.summaryTitle}>Bill Summary</Text>
-
+                            <Text style={styles.summaryTitle}>Total Summary</Text>
                             <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Subtotal ({items.length} items)</Text>
-                                <Text style={styles.summaryValue}>₹ {total.toLocaleString()}</Text>
+                                <Text style={styles.summaryLabel}>Total Orders</Text>
+                                <Text style={styles.summaryValue}>{orders.length}</Text>
                             </View>
-
-                            <View style={styles.divider} />
-
                             <View style={styles.summaryRow}>
-                                <Text style={styles.totalLabel}>Total Amount</Text>
-                                <Text style={styles.totalValue}>₹ {total.toLocaleString()}</Text>
+                                <Text style={styles.summaryLabel}>Total Items</Text>
+                                <Text style={styles.summaryValue}>
+                                    {orders.reduce((sum, o) => sum + o.totalQuantity, 0)}
+                                </Text>
+                            </View>
+                            <View style={styles.divider} />
+                            <View style={styles.summaryRow}>
+                                <Text style={styles.totalLabel}>Grand Total</Text>
+                                <Text style={styles.totalValue}>
+                                    ₹{orders.reduce((sum, o) => sum + o.totals.grandTotal, 0).toLocaleString()}
+                                </Text>
                             </View>
                         </View>
-
-                        {/* Problem / Message Section - Clickable Card */}
-                        {currentProblems.length > 0 && (
-                            <TouchableOpacity
-                                style={styles.selectionCard}
-                                activeOpacity={0.7}
-                                onPress={() => setShowProblemModal(true)}
-                            >
-                                <View style={styles.selectionCardLeft}>
-                                    <Ionicons name="alert-circle-outline" size={24} color={BrandColors.primary} />
-                                    <View style={styles.selectionCardText}>
-                                        <Text style={styles.selectionCardTitle}>What's the Problem?</Text>
-                                        <Text style={styles.selectionCardSubtitle}>
-                                            {selectedProblems.length > 0
-                                                ? `${selectedProblems.length} problem${selectedProblems.length > 1 ? 's' : ''} selected`
-                                                : 'Tap to select problems'}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
-                            </TouchableOpacity>
-                        )}
-
-                        {/* Schedule Service Section - Clickable Card */}
-                        <TouchableOpacity
-                            style={styles.selectionCard}
-                            activeOpacity={0.7}
-                            onPress={() => setShowScheduleModal(true)}
-                        >
-                            <View style={styles.selectionCardLeft}>
-                                <Ionicons name="calendar-outline" size={24} color={BrandColors.primary} />
-                                <View style={styles.selectionCardText}>
-                                    <Text style={styles.selectionCardTitle}>Schedule Service</Text>
-                                    <Text style={styles.selectionCardSubtitle}>
-                                        {selectedDate && selectedTime
-                                            ? `${formatDate(selectedDate)}, ${selectedTime}`
-                                            : 'Tap to select date & time'}
-                                    </Text>
-                                </View>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
-                        </TouchableOpacity>
 
                         {/* Notice */}
                         <View style={styles.noticeCard}>
@@ -363,7 +633,11 @@ export default function CartScreen() {
                                 {' '}That is applicable only if the service is denied by the customer after the serviceman's visit to the service location.
                             </Text>
                         </View>
-                        <TouchableOpacity activeOpacity={0.8} style={styles.helpCard} onPress={() => Linking.openURL('tel:+918273737872')}>
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            style={styles.helpCard}
+                            onPress={() => Linking.openURL('tel:+918273737872')}
+                        >
                             <Text style={{ fontWeight: '700', color: BrandColors.primary }}>Need help?</Text>
                             <Text style={{ color: BrandColors.text }}>Call us +91 8273737872</Text>
                         </TouchableOpacity>
@@ -371,9 +645,8 @@ export default function CartScreen() {
                 )}
             </ScrollView>
 
-            {items.length > 0 && (
+            {orders.length > 0 && (
                 <View style={styles.bottomBar}>
-
                     {/* Compact Address Row */}
                     <TouchableOpacity
                         style={styles.compactAddress}
@@ -388,7 +661,6 @@ export default function CartScreen() {
                                     ? `${selectedAddress.address_line_1}, ${selectedAddress.address_line_2}, ${selectedAddress.pincode}`
                                     : 'Loading...'}
                         </Text>
-
                         <Ionicons name="chevron-up" size={18} color={BrandColors.mutedText} />
                     </TouchableOpacity>
 
@@ -397,7 +669,6 @@ export default function CartScreen() {
                         <Text style={styles.bookText}>Confirm Booking</Text>
                         <Ionicons name="checkmark-circle" size={20} color="#fff" />
                     </TouchableOpacity>
-
                 </View>
             )}
 
@@ -470,50 +741,54 @@ export default function CartScreen() {
             )}
 
             {/* Problem / Message Modal */}
-            {showProblemModal && currentProblems.length > 0 && (
-                <View style={styles.addressOverlay}>
-                    <View style={styles.addressModal}>
-                        <Text style={styles.modalTitle}>What's the Problem?</Text>
-                        <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+            {showProblemModal && activeOrderId && (() => {
+                const order = orders.find((o) => o.orderId === activeOrderId);
+                const currentProblems = order ? problemOptions[order.mainService.slug] || [] : [];
+                return currentProblems.length > 0 ? (
+                    <View style={styles.addressOverlay}>
+                        <View style={styles.addressModal}>
+                            <Text style={styles.modalTitle}>What's the Problem?</Text>
+                            <Text style={styles.sectionSubtitle}>Select all that apply</Text>
 
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            <View style={styles.chipsContainer}>
-                                {currentProblems.map((problem, index) => {
-                                    const isSelected = selectedProblems.includes(problem);
-                                    return (
-                                        <TouchableOpacity
-                                            key={index}
-                                            style={[styles.chip, isSelected && styles.chipSelected]}
-                                            onPress={() => toggleProblem(problem)}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                                                {problem}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View style={styles.chipsContainer}>
+                                    {currentProblems.map((problem: string, index: number) => {
+                                        const isSelected = selectedProblems.includes(problem);
+                                        return (
+                                            <TouchableOpacity
+                                                key={index}
+                                                style={[styles.chip, isSelected && styles.chipSelected]}
+                                                onPress={() => toggleProblem(problem)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                                                    {problem}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
 
-                            <Text style={styles.inputLabel}>Additional Message (Optional)</Text>
-                            <TextInput
-                                style={styles.messageInput}
-                                placeholder="Please enter your message here"
-                                placeholderTextColor={BrandColors.mutedText}
-                                value={message}
-                                onChangeText={setMessage}
-                                multiline
-                                numberOfLines={4}
-                                textAlignVertical="top"
-                            />
-                        </ScrollView>
+                                <Text style={styles.inputLabel}>Additional Message (Optional)</Text>
+                                <TextInput
+                                    style={styles.messageInput}
+                                    placeholder="Please enter your message here"
+                                    placeholderTextColor={BrandColors.mutedText}
+                                    value={message}
+                                    onChangeText={setMessage}
+                                    multiline
+                                    numberOfLines={4}
+                                    textAlignVertical="top"
+                                />
+                            </ScrollView>
 
-                        <TouchableOpacity onPress={handleSaveProblems} style={styles.closeBtn}>
-                            <Text style={{ color: '#fff', fontWeight: '600' }}>Done</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity onPress={handleSaveProblems} style={styles.closeBtn}>
+                                <Text style={{ color: '#fff', fontWeight: '600' }}>Done</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            )}
+                ) : null;
+            })()}
 
             {/* Schedule Service Modal */}
             {showScheduleModal && (
@@ -599,6 +874,8 @@ export default function CartScreen() {
                 </View>
             )}
 
+            <OrderStatusOverlay status={orderStatus} orderId={confirmedOrderId ?? undefined} />
+
         </View>
     );
 }
@@ -639,6 +916,88 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: BrandColors.mutedText,
         fontWeight: '500',
+    },
+    orderCard: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        overflow: 'hidden',
+    },
+    orderHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        backgroundColor: '#fff',
+    },
+    orderHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
+    },
+    orderHeaderRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    removeBtn: {
+        padding: 4,
+    },
+    orderTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: BrandColors.text,
+    },
+    orderSubtitle: {
+        fontSize: 13,
+        color: BrandColors.mutedText,
+        marginTop: 2,
+    },
+    orderDetails: {
+        padding: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+    },
+    serviceItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+    },
+    serviceItemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    serviceInfo: {
+        flex: 1,
+    },
+    serviceName: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: BrandColors.text,
+        marginBottom: 4,
+    },
+    serviceQty: {
+        fontSize: 14,
+        color: BrandColors.mutedText,
+        marginHorizontal: 12,
+    },
+    servicePrice: {
+        fontSize: 13,
+        color: BrandColors.mutedText,
+    },
+    serviceTotal: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: BrandColors.text,
+        minWidth: 70,
+        textAlign: 'right',
     },
     itemsContainer: {
         marginTop: 16,
@@ -1021,6 +1380,10 @@ const styles = StyleSheet.create({
         marginVertical: 8,
         borderWidth: 1,
         borderColor: '#E5E7EB',
+    },
+    selectionCardActive: {
+        borderColor: BrandColors.primary,
+        backgroundColor: '#F0F9FF',
     },
     selectionCardLeft: {
         flexDirection: 'row',

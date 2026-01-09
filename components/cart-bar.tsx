@@ -6,15 +6,18 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CartBar() {
     const router = useRouter();
-    const { items, totalItems, totalPrice } = useCart();
+    const { orders, totalOrders, totalPrice } = useCart();
 
-    if (items.length === 0) {
+    if (orders.length === 0) {
         return null;
     }
 
     const handleViewCart = () => {
         router.push('/(cart)');
     };
+
+    // Calculate total items across all orders
+    const totalItems = orders.reduce((sum, order) => sum + order.totalQuantity, 0);
 
     return (
         <View style={styles.bar}>
@@ -24,14 +27,14 @@ export default function CartBar() {
                 </View>
                 <View>
                     <Text style={styles.itemsText}>
-                        {totalItems} item{totalItems > 1 ? 's' : ''}
+                        {totalOrders} order{totalOrders > 1 ? 's' : ''} • {totalItems} item{totalItems > 1 ? 's' : ''}
                     </Text>
                     <Text style={styles.totalText}>₹ {totalPrice.toLocaleString()}</Text>
                 </View>
             </View>
 
             <TouchableOpacity onPress={handleViewCart} style={styles.viewButton}>
-                <Text style={styles.viewText}>View Items</Text>
+                <Text style={styles.viewText}>View Cart</Text>
                 <Ionicons name="arrow-forward" size={18} color="#fff" />
             </TouchableOpacity>
         </View>
@@ -98,5 +101,6 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: '700',
         fontSize: 14,
-    }
+    },
 });
+

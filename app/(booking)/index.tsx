@@ -1,21 +1,20 @@
 import { Capsule } from '@/components/booking/capsule';
 import { ServiceRow } from '@/components/booking/service-row';
 import { SkeletonCapsule } from '@/components/booking/skeleton-capsule';
-import CartBar from '@/components/cart-bar';
 import { useCart } from '@/contexts/cart-context';
 import { getCapacities, getServices, getType } from '@/lib/services/booking';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BookingScreen() {
     const { slug, serviceName, city } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { addItem, removeItem, items: cartItems } = useCart();
+    const { addOrder } = useCart();
 
     const [types, setTypes] = useState<any[]>([]);
     const [capacities, setCapacities] = useState<any[]>([]);
@@ -27,6 +26,9 @@ export default function BookingScreen() {
 
     const [selectedType, setSelectedType] = useState<any>(null);
     const [selectedCapacity, setSelectedCapacity] = useState<any>(null);
+
+    // Local state for temporary service selection (not in cart yet)
+    const [selectedServices, setSelectedServices] = useState<any[]>([]);
 
     useEffect(() => {
         loadBooking(city as string, slug as string);
@@ -43,6 +45,7 @@ export default function BookingScreen() {
         setSelectedType(type);
         setSelectedCapacity(null);
         setServices([]);
+        setSelectedServices([]); // Clear selections when type changes
 
         if (type.has_capacity) {
             setLoadingCapacities(true);
@@ -59,6 +62,7 @@ export default function BookingScreen() {
 
     const handleCapacitySelect = async (capacity: any) => {
         setSelectedCapacity(capacity);
+        setSelectedServices([]); // Clear selections when capacity changes
 
         setLoadingServices(true);
         const data = await getServices(capacity.id, city as string);
@@ -67,13 +71,74 @@ export default function BookingScreen() {
     };
 
     const toggleService = (service: any) => {
-        const exists = cartItems.find(i => i.id === service.id);
+        const exists = selectedServices.find(s => s.id === service.id);
         if (exists) {
-            removeItem(service.id);
+            setSelectedServices(prev => prev.filter(s => s.id !== service.id));
         } else {
-            addItem({ ...service, categorySlug: slug as string });
+            setSelectedServices(prev => [...prev, { ...service, qty: 1 }]);
         }
     };
+
+    const updateServiceQty = (serviceId: number, delta: number) => {
+        setSelectedServices(prev =>
+            prev
+                .map(s => s.id === serviceId ? { ...s, qty: s.qty + delta } : s)
+                .filter(s => s.qty > 0)
+        );
+    };
+
+    const handleAddToCart = () => {
+        if (selectedServices.length === 0) {
+            Alert.alert('No Services Selected', 'Please select at least one service to add to cart.');
+            return;
+        }
+
+        // Calculate totals
+        const totalPrice = selectedServices.reduce((sum, s) => sum + (s.price * s.qty), 0);
+
+        // Create order object
+        const order = {
+            orderId: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            mainService: {
+                id: slug as string,
+                name: serviceName as string,
+                slug: slug as string,
+            },
+            services: selectedServices.map(s => ({
+                id: String(s.id),
+                service: s.name,
+                qty: String(s.qty),
+                price: String(s.price),
+                note: null,
+                l2: selectedType?.name || '',
+                l3: selectedCapacity?.name || '',
+            })),
+            problems: [],
+            message: '',
+            serviceDate: null,
+            serviceTime: null,
+            l2: selectedType?.name || '',
+            l3: selectedCapacity?.name || '',
+            totalServiceCount: selectedServices.length,
+            totalQuantity: selectedServices.reduce((sum, s) => sum + s.qty, 0),
+            totalPrice: totalPrice,
+            totals: {
+                subtotal: totalPrice,
+                discount: 0,
+                tax: 0,
+                grandTotal: totalPrice,
+            },
+        };
+
+        addOrder(order);
+
+        // Clear selections and navigate to cart
+        setSelectedServices([]);
+        router.push('/(cart)');
+    };
+
+    const totalSelectedQty = selectedServices.reduce((sum, s) => sum + s.qty, 0);
+    const totalSelectedPrice = selectedServices.reduce((sum, s) => sum + (s.price * s.qty), 0);
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -149,19 +214,20 @@ export default function BookingScreen() {
                         ) : (
                             <ScrollView showsVerticalScrollIndicator={false}>
                                 {services.map(s => {
-                                const normalizedService = {
-                                    ...s,
-                                    price: Number(s.price) || 0,
-                                };
+                                    const normalizedService = {
+                                        ...s,
+                                        price: Number(s.price) || 0,
+                                    };
+                                    const selectedService = selectedServices.find(ss => ss.id === normalizedService.id);
 
-                                return (
-                                    <ServiceRow
-                                    key={normalizedService.id}
-                                    service={normalizedService}
-                                    selected={cartItems.some(i => i.id === normalizedService.id)}
-                                    onToggle={() => toggleService(normalizedService)}
-                                    />
-                                );
+                                    return (
+                                        <ServiceRow
+                                            key={normalizedService.id}
+                                            service={normalizedService}
+                                            selected={!!selectedService}
+                                            onToggle={() => toggleService(normalizedService)}
+                                        />
+                                    );
                                 })}
                             </ScrollView>
                         )}
@@ -169,8 +235,27 @@ export default function BookingScreen() {
                 </>
             )}
 
-            {/* Empty state handled by CartBar component */}
-            <CartBar />
+            {/* Add to Cart Button */}
+            {selectedServices.length > 0 && (
+                <View style={styles.addToCartBar}>
+                    <View style={styles.leftSection}>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>{totalSelectedQty}</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.itemsText}>
+                                {totalSelectedQty} item{totalSelectedQty > 1 ? 's' : ''}
+                            </Text>
+                            <Text style={styles.totalText}>₹ {totalSelectedPrice.toLocaleString()}</Text>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity onPress={handleAddToCart} style={styles.addButton}>
+                        <Text style={styles.addButtonText}>Add to Cart</Text>
+                        <Ionicons name="cart" size={18} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 }
@@ -220,5 +305,65 @@ const styles = StyleSheet.create({
     loadingText: {
         color: BrandColors.mutedText,
         fontSize: 14,
-    }
+    },
+    addToCartBar: {
+        position: 'absolute',
+        bottom: 24,
+        left: 16,
+        right: 16,
+        backgroundColor: BrandColors.primary,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    leftSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    badge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    badgeText: {
+        color: '#fff',
+        fontWeight: '800',
+        fontSize: 16,
+    },
+    itemsText: {
+        color: 'rgba(255, 255, 255, 0.9)',
+        fontSize: 13,
+        fontWeight: '500',
+    },
+    totalText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 18,
+    },
+    addButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    addButtonText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 14,
+    },
 });
