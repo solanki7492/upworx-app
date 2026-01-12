@@ -1,5 +1,5 @@
 // Service types
-export interface Service {
+interface Service {
     id: number;
     name: string;
     slug: string;

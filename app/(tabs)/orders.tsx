@@ -1,73 +1,148 @@
 import CartBar from '@/components/cart-bar';
+import { fetchOrders } from '@/lib/services/orders';
+import { OrderItem } from '@/lib/types/order';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const mockOrders = [
-    {
-        id: '1',
-        serviceName: 'AC Repair',
-        providerName: 'Rajesh Kumar',
-        date: '2024-12-28',
-        time: '10:00 AM',
-        status: 'completed',
-        amount: 850,
-        address: 'Plot 45, Sector 12, Bareilly',
-    },
-    {
-        id: '2',
-        serviceName: 'House Cleaning',
-        providerName: 'Sunita Sharma',
-        date: '2024-12-25',
-        time: '2:00 PM',
-        status: 'completed',
-        amount: 1200,
-        address: 'Flat 301, Green Heights, Bareilly',
-    },
-    {
-        id: '3',
-        serviceName: 'Plumbing',
-        providerName: 'Amit Singh',
-        date: '2024-12-30',
-        time: '11:00 AM',
-        status: 'ongoing',
-        amount: 600,
-        address: 'House 23, Civil Lines, Bareilly',
-    },
-    {
-        id: '4',
-        serviceName: 'Washing Machine Repair',
-        providerName: 'Manoj Verma',
-        date: '2024-12-31',
-        time: '3:00 PM',
-        status: 'scheduled',
-        amount: 950,
-        address: 'B-12, Premnagar, Bareilly',
-    },
-];
 
 const getStatusColor = (status: string) => {
     switch (status) {
         case 'completed':
             return BrandColors.success;
         case 'ongoing':
+        case 'in-progress':
+        case 'assigned':
             return BrandColors.warning;
+        case 'pending':
         case 'scheduled':
             return BrandColors.primary;
         case 'cancelled':
+        case 'customer-denied-service':
             return BrandColors.danger;
         default:
             return BrandColors.mutedText;
     }
 };
 
-const getStatusText = (status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+const getStatusText = (statusName: string) => {
+    return statusName;
+};
+
+const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+};
+
+const formatTime = (timeString: string) => {
+    const [hours, minutes, seconds] = timeString.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, seconds || 0);
+    return date.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+const formatDateTime = (dateString: string, timeString: string) => {
+    return `${formatDate(dateString)} at ${formatTime(timeString)}`;
 };
 
 export default function OrdersScreen() {
     const insets = useSafeAreaInsets();
+    const [orders, setOrders] = useState<OrderItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+
+    useEffect(() => {
+        loadOrders(1);
+    }, []);
+
+    const loadOrders = async (pageNumber = 1) => {
+        if (loadingMore || !hasMore) return;
+
+        try {
+            pageNumber === 1 ? setLoading(true) : setLoadingMore(true);
+            setError(null);
+
+            const response = await fetchOrders(undefined, pageNumber);
+
+            const newOrders = response.data.data;
+
+            setOrders(prev =>
+            pageNumber === 1 ? newOrders : [...prev, ...newOrders]
+            );
+
+            setPage(response.data.current_page);
+            setHasMore(response.data.current_page < response.data.last_page);
+        } catch (err: any) {
+            setError(err.message || 'Failed to load orders');
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    const handleOrderPress = (orderId: number) => {
+        router.push({
+            pathname: '/(order)/order-details',
+            params: { id: orderId },
+        });
+    };
+
+    if (loading) {
+        return (
+            <View style={[styles.container, { paddingTop: insets.top }]}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>My Orders</Text>
+                </View>
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color={BrandColors.primary} />
+                </View>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={[styles.container, { paddingTop: insets.top }]}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>My Orders</Text>
+                </View>
+                <View style={styles.centerContainer}>
+                    <Ionicons name="alert-circle-outline" size={64} color={BrandColors.danger} />
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={() => loadOrders(1)}>
+                        <Text style={styles.retryText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
+    if (orders.length === 0) {
+        return (
+            <View style={[styles.container, { paddingTop: insets.top }]}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>My Orders</Text>
+                </View>
+                <View style={styles.centerContainer}>
+                    <Ionicons name="receipt-outline" size={64} color={BrandColors.mutedText} />
+                    <Text style={styles.emptyText}>No orders yet</Text>
+                    <Text style={styles.emptySubText}>Your booked services will appear here</Text>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -78,19 +153,34 @@ export default function OrdersScreen() {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 30 }}
-                bounces={false}
-                overScrollMode="never"
+                onScroll={({ nativeEvent }) => {
+                    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+                    const paddingToBottom = 100;
+
+                    if (
+                    layoutMeasurement.height + contentOffset.y >=
+                    contentSize.height - paddingToBottom
+                    ) {
+                    if (hasMore && !loadingMore) {
+                        loadOrders(page + 1);
+                    }
+                    }
+                }}
+                scrollEventThrottle={16}
             >
-                {mockOrders.map((order) => (
-                    <TouchableOpacity key={order.id} style={styles.orderCard} activeOpacity={0.7}>
+                {orders.map((order) => (
+                    <View
+                        key={order.id}
+                        style={styles.orderCard}
+                    >
                         <View style={styles.orderHeader}>
                             <View style={styles.orderHeaderLeft}>
-                                <Text style={styles.serviceName}>{order.serviceName}</Text>
-                                <Text style={styles.orderId}>Order #{order.id}</Text>
+                                <Text style={styles.serviceName}>{order.cart.name}</Text>
+                                <Text style={styles.orderId}>Order #{order.order.order_id}</Text>
                             </View>
-                            <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}20` }]}>
-                                <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
-                                    {getStatusText(order.status)}
+                            <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.order_status.slug)}20` }]}>
+                                <Text style={[styles.statusText, { color: getStatusColor(order.order_status.slug) }]}>
+                                    {getStatusText(order.order_status.name)}
                                 </Text>
                             </View>
                         </View>
@@ -99,21 +189,23 @@ export default function OrdersScreen() {
 
                         <View style={styles.orderDetails}>
                             <View style={styles.detailRow}>
-                                <Ionicons name="person-outline" size={18} color={BrandColors.mutedText} />
-                                <Text style={styles.detailText}>{order.providerName}</Text>
-                            </View>
-
-                            <View style={styles.detailRow}>
                                 <Ionicons name="calendar-outline" size={18} color={BrandColors.mutedText} />
                                 <Text style={styles.detailText}>
-                                    {order.date} at {order.time}
+                                    {formatDateTime(order.service_date, order.service_time)}
                                 </Text>
                             </View>
 
                             <View style={styles.detailRow}>
                                 <Ionicons name="location-outline" size={18} color={BrandColors.mutedText} />
-                                <Text style={styles.detailText} numberOfLines={1}>
-                                    {order.address}
+                                <Text style={styles.detailText} numberOfLines={2}>
+                                    {order.order.address.address_line_1}, {order.order.address.address_line_2}, {order.order.address.city} - {order.order.address.pincode}
+                                </Text>
+                            </View>
+
+                            <View style={styles.detailRow}>
+                                <Ionicons name="cube-outline" size={18} color={BrandColors.mutedText} />
+                                <Text style={styles.detailText}>
+                                    {order.cart.total_service} {order.cart.total_service === 1 ? 'Service' : 'Services'}
                                 </Text>
                             </View>
                         </View>
@@ -123,29 +215,21 @@ export default function OrdersScreen() {
                         <View style={styles.orderFooter}>
                             <View>
                                 <Text style={styles.amountLabel}>Total Amount</Text>
-                                <Text style={styles.amount}>₹{order.amount}</Text>
+                                <Text style={styles.amount}>₹{order.total_price || order.price}</Text>
                             </View>
 
-                            {order.status === 'completed' && (
-                                <TouchableOpacity style={styles.rebookButton}>
-                                    <Text style={styles.rebookText}>Rebook</Text>
-                                </TouchableOpacity>
-                            )}
-
-                            {order.status === 'scheduled' && (
-                                <TouchableOpacity style={styles.viewDetailsButton}>
-                                    <Text style={styles.viewDetailsText}>View Details</Text>
-                                </TouchableOpacity>
-                            )}
-
-                            {order.status === 'ongoing' && (
-                                <TouchableOpacity style={styles.trackButton}>
-                                    <Text style={styles.trackText}>Track</Text>
-                                </TouchableOpacity>
-                            )}
+                            <TouchableOpacity style={styles.viewDetailsButton} onPress={() => handleOrderPress(order.id)}>
+                                <Text style={styles.viewDetailsText}>View Details</Text>
+                                <Ionicons name="chevron-forward" size={16} color={BrandColors.card} />
+                            </TouchableOpacity>
                         </View>
-                    </TouchableOpacity>
+                    </View>
                 ))}
+                {loadingMore && (
+                    <View style={{ paddingVertical: 20 }}>
+                        <ActivityIndicator size="small" color={BrandColors.primary} />
+                    </View>
+                )}
             </ScrollView>
             <CartBar />
         </View>
@@ -255,21 +339,52 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     viewDetailsText: {
         color: BrandColors.card,
         fontSize: 14,
         fontWeight: '600',
     },
-    trackButton: {
-        backgroundColor: BrandColors.warning,
-        paddingHorizontal: 28,
-        paddingVertical: 10,
-        borderRadius: 8,
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 16,
     },
-    trackText: {
+    loadingText: {
+        fontSize: 16,
+        color: BrandColors.mutedText,
+    },
+    errorText: {
+        fontSize: 16,
+        color: BrandColors.danger,
+        textAlign: 'center',
+        marginTop: 8,
+    },
+    retryButton: {
+        backgroundColor: BrandColors.primary,
+        paddingHorizontal: 32,
+        paddingVertical: 12,
+        borderRadius: 8,
+        marginTop: 16,
+    },
+    retryText: {
         color: BrandColors.card,
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '600',
+    },
+    emptyText: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: BrandColors.text,
+        marginTop: 16,
+    },
+    emptySubText: {
+        fontSize: 14,
+        color: BrandColors.mutedText,
+        textAlign: 'center',
     },
 });

@@ -30,6 +30,9 @@ export default function AddressesScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [addressQuery, setAddressQuery] = useState('');
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -164,6 +167,57 @@ export default function AddressesScreen() {
         }
     };
 
+    const handleAddressChange = async (text: string) => {
+        setAddressQuery(text);
+        setFormData(prev => ({ ...prev, address_line_2: text }));
+
+        if (text.length < 3) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        const res = await fetch(
+            `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${text}&components=country:in&key=AIzaSyAt2K0xeZNSSH7zRdJ4YmkrOJcXMPV2Hlk`
+        );
+
+        const json = await res.json();
+
+        if (json.predictions) {
+            setSuggestions(json.predictions);
+            setShowSuggestions(true);
+        }
+    };
+
+    const selectAddress = async (item: any) => {
+        setAddressQuery(item.description);
+        setShowSuggestions(false);
+
+        const res = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${item.place_id}&key=AIzaSyAt2K0xeZNSSH7zRdJ4YmkrOJcXMPV2Hlk`
+        );
+
+        const json = await res.json();
+        const result = json.result;
+
+        let city = '';
+        let state = '';
+
+        result.address_components.forEach((component: any) => {
+            if (component.types.includes('locality')) city = component.long_name;
+            if (component.types.includes('administrative_area_level_1')) state = component.long_name;
+        });
+
+        setFormData(prev => ({
+            ...prev,
+            address_line_2: item.description,
+            city,
+            state,
+            latitude: result.geometry.location.lat.toString(),
+            longitude: result.geometry.location.lng.toString(),
+        }));
+    };
+
     const openAddModal = () => {
         setEditingAddress(null);
         setFormData({
@@ -214,8 +268,8 @@ export default function AddressesScreen() {
             Alert.alert('Validation Error', 'Please enter a valid 6-digit pincode');
             return;
         }
-        if (!formData.address_line_1.trim()) {
-            Alert.alert('Validation Error', 'Please enter address line 1');
+        if (!formData.address_line_2.trim()) {
+            Alert.alert('Validation Error', 'Please enter Road name/Area/Colony');
             return;
         }
         if (!formData.city || !formData.state) {
@@ -229,8 +283,8 @@ export default function AddressesScreen() {
                 name: formData.name,
                 mobile_number: formData.mobile_number,
                 pincode: formData.pincode,
-                address_line_1: formData.address_line_1,
-                address_line_2: formData.address_line_2,
+                address_line_1: formData.address_line_2,
+                address_line_2: formData.address_line_1,
                 city: formData.city,
                 state: formData.state,
                 latitude: formData.latitude,
@@ -238,7 +292,6 @@ export default function AddressesScreen() {
                 default_address: formData.default_address,
                 address_type: formData.address_type,
             };
-            console.log('Submitting address:', requestData);
 
             if (editingAddress) {
                 await updateAddress(editingAddress.id, requestData);
@@ -425,7 +478,7 @@ export default function AddressesScreen() {
 
                         {/* Address Line 1 */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Flat, House no. *</Text>
+                            <Text style={styles.inputLabel}>Flat, House no.</Text>
                             <TextInput
                                 style={styles.input}
                                 value={formData.address_line_1}
@@ -437,14 +490,29 @@ export default function AddressesScreen() {
 
                         {/* Address Line 2 */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Road name, Area, Colony</Text>
+                            <Text style={styles.inputLabel}>Road name, Area, Colony *</Text>
+
                             <TextInput
                                 style={styles.input}
-                                value={formData.address_line_2}
-                                onChangeText={(text) => setFormData((prev) => ({ ...prev, address_line_2: text }))}
+                                value={addressQuery}
+                                onChangeText={handleAddressChange}
                                 placeholder="Road Name, Area, Colony"
                                 placeholderTextColor={BrandColors.mutedText}
                             />
+
+                            {showSuggestions && (
+                                <View style={styles.suggestionsBox}>
+                                    {suggestions.map((item) => (
+                                        <TouchableOpacity
+                                            key={item.place_id}
+                                            style={styles.suggestionItem}
+                                            onPress={() => selectAddress(item)}
+                                        >
+                                            <Text style={styles.suggestionText}>{item.description}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
                         </View>
 
                         {/* City (auto-filled) */}
@@ -748,5 +816,27 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 20,
+    },
+    suggestionsBox: {
+        position: 'absolute',
+        top: 72,
+        left: 0,
+        right: 0,
+        backgroundColor: BrandColors.card,
+        borderRadius: 8,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 6,
+        zIndex: 10,
+    },
+    suggestionItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: BrandColors.border,
+    },
+    suggestionText: {
+        color: BrandColors.text,
+        fontSize: 14,
     },
 });

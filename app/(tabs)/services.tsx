@@ -17,7 +17,7 @@ export default function ServicesScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BrandColors.text} />
+          <ActivityIndicator size="large" color={BrandColors.primary} />
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
