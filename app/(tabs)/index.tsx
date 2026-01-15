@@ -9,11 +9,10 @@ import { useAuth } from '@/contexts/auth-context';
 import { StorageService } from '@/lib';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-const { Alert } = require('react-native');
 
 const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
 
@@ -35,7 +34,7 @@ export default function HomeScreen() {
   const [selectedCity, setSelectedCity] = useState('Bareilly');
   const [open, setOpen] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const userRole = user?.role || 'CUSTOMER';
 
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const { setCity } = useApp();
@@ -89,6 +88,10 @@ export default function HomeScreen() {
       .join('');
   };
 
+  if (userRole === 'PARTNER') {
+    return <Redirect href="/(tabs)/leads" />;
+  }
+
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -134,7 +137,13 @@ export default function HomeScreen() {
 
         {/* Avatar */}
         <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.avatar}>
-          <Text style={styles.avatarText}>{user ? getInitials(user.name) : 'G'}</Text>
+          {
+            user?.image ? (
+              <Text style={styles.avatarText}>{getInitials(user.name)}</Text>
+            ) : (
+              <Ionicons name="person" size={24} color={BrandColors.background} />
+            )
+          }
         </TouchableOpacity>
       </View>
 

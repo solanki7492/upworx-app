@@ -11,7 +11,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -68,7 +69,11 @@ export default function EditProfileScreen() {
                 {/* Avatar Section */}
                 <View style={styles.avatarSection}>
                     <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{getInitials(formData.name || 'User')}</Text>
+                        { user?.image ? (
+                            <Image source={{ uri: user.image }} style={styles.avatarImage} resizeMode="cover" />
+                        ) : (
+                            <Text style={styles.avatarText}>{getInitials(formData.name)}</Text>
+                        ) }
                     </View>
                     <TouchableOpacity style={styles.changePhotoButton}>
                         <Ionicons name="camera" size={20} color={BrandColors.primary} />
@@ -175,6 +180,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 50,
     },
     avatarText: {
         color: BrandColors.card,

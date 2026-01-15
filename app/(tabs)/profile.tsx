@@ -4,7 +4,7 @@ import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const profileMenuItems = [
@@ -133,8 +133,8 @@ export default function ProfileScreen() {
                 <View style={styles.userCard}>
                     <View style={styles.avatarContainer}>
                         <View style={styles.avatar}>
-                            {user.image ? (
-                                <Text style={styles.avatarText}>{getInitials(user.name)}</Text>
+                            {user?.image ? (
+                                <Image source={{ uri: user.image }} style={styles.avatarImage} resizeMode="cover" />
                             ) : (
                                 <Text style={styles.avatarText}>{getInitials(user.name)}</Text>
                             )}
@@ -263,6 +263,11 @@ const styles = StyleSheet.create({
         backgroundColor: BrandColors.primary,
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
     avatarText: {
         color: BrandColors.card,

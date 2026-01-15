@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+type RegisterRole = 'CUSTOMER' | 'PARTNER';
+
 export default function Register() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -13,6 +15,7 @@ export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [role, setRole] = useState<RegisterRole>('CUSTOMER');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -67,6 +70,7 @@ export default function Register() {
                         mobile: formData.phone.trim(),
                         from: 'register',
                         userId: response.data.user_id.toString(),
+                        role: role,
                     },
                 });
             } else {
@@ -86,13 +90,15 @@ export default function Register() {
                     <Ionicons name="arrow-back" size={24} color={BrandColors.primary} />
                 </TouchableOpacity>
                 <Text style={styles.heading}>
-                    Register
+                    {role === 'CUSTOMER' ? 'Customer Registration' : 'Partner Registration'}
                 </Text>
             </View>
             <View style={styles.content}>
                 <Image source={require('@/assets/images/upworx-logo.png')} style={styles.logo} />
 
-                <Text style={styles.title}>Create Account</Text>
+                <Text style={styles.title}>
+                    {role === 'CUSTOMER' ? 'Create Customer Account' : 'Create Partner Account'}
+                </Text>
 
                 <TextInput
                     placeholder="Full Name"
@@ -200,6 +206,39 @@ export default function Register() {
                         <Text style={styles.link}> Login</Text>
                     </TouchableOpacity>
                 </View>
+                <TouchableOpacity
+                    onPress={() => {
+                        setRole(prev => (prev === 'CUSTOMER' ? 'PARTNER' : 'CUSTOMER'));
+                        setFormData({
+                            name: '',
+                            phone: '',
+                            email: '',
+                            password: '',
+                            confirmPassword: '',
+                        });
+                    }}
+                    disabled={loading}
+                    style={[
+                        styles.roleSwitchBtn,
+                        role === 'PARTNER' && styles.roleSwitchActive,
+                        loading && styles.disabledBtn,
+                    ]}
+                >
+                    <Ionicons
+                        name={role === 'CUSTOMER' ? 'briefcase-outline' : 'person-outline'}
+                        size={18}
+                        color={role === 'CUSTOMER' ? BrandColors.primary : '#fff'}
+                        style={{ marginRight: 8 }}
+                    />
+                    <Text
+                        style={[
+                            styles.roleSwitchText,
+                            role === 'PARTNER' && styles.roleSwitchTextActive,
+                        ]}
+                    >
+                        {role === 'CUSTOMER' ? 'Switch to Partner Registration' : 'Switch to Customer Registration'}
+                    </Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -296,5 +335,27 @@ const styles = StyleSheet.create({
     },
     disabledBtn: {
         opacity: 0.6,
+    },
+    roleSwitchBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 30,
+        borderWidth: 1.5,
+        borderColor: BrandColors.primary,
+        backgroundColor: 'transparent',
+        marginVertical: 14,
+    },
+    roleSwitchActive: {
+        backgroundColor: BrandColors.primary,
+    },
+    roleSwitchText: {
+        fontWeight: '700',
+        color: BrandColors.primary,
+        fontSize: 15,
+    },
+    roleSwitchTextActive: {
+        color: '#fff',
     },
 });

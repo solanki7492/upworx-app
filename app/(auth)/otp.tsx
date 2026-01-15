@@ -7,7 +7,7 @@ import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OtpScreen() {
-    const { mobile, from } = useLocalSearchParams();
+    const { mobile, from, role = 'CUSTOMER' } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { login: authLogin } = useAuth();
@@ -40,7 +40,7 @@ export default function OtpScreen() {
             });
 
             if (response.status) {
-                await authLogin(response.token, response.user);
+                await authLogin(response.token, response.user, role as 'CUSTOMER' | 'PARTNER');
                 Alert.alert('Success', response.message);
                 router.replace('/(tabs)');
             } else {
@@ -56,7 +56,10 @@ export default function OtpScreen() {
     const handleResendOtp = async () => {
         try {
             setResendLoading(true);
-            const response = await resendOtp({ mobile: mobile as string });
+            const response = await resendOtp({
+                mobile: mobile as string,
+                role: role as 'CUSTOMER' | 'PARTNER'
+            });
 
             if (response.status) {
                 Alert.alert('Success', response.message);

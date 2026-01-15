@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+type LoginRole = 'CUSTOMER' | 'PARTNER';
+
 export default function Login() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -15,6 +17,7 @@ export default function Login() {
     const [mobile, setMobile] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [role, setRole] = useState<LoginRole>('CUSTOMER');
 
     const handleLogin = async () => {
         if (!mobile.trim()) {
@@ -28,12 +31,20 @@ export default function Login() {
 
         try {
             setLoading(true);
-            const response = await loginApi({ mobile: mobile.trim(), password: password.trim() });
+            const response = await loginApi({
+                mobile: mobile.trim(),
+                password: password.trim(),
+                role: role
+            });
 
             if (response.status) {
-                await authLogin(response.token, response.user);
+                await authLogin(response.token, response.user, response.role);
                 //Alert.alert('Success', response.message);
-                router.replace('/(tabs)');
+                if(response.role === 'PARTNER'){
+                    router.replace('/(tabs)/leads');
+                } else {
+                    router.replace('/(tabs)');
+                }
             } else {
                 Alert.alert('Error', response.message || 'Login failed');
             }
@@ -52,7 +63,7 @@ export default function Login() {
 
         try {
             setLoading(true);
-            await resendOtp({ mobile: mobile.trim() });
+            await resendOtp({ mobile: mobile.trim(), role: role });
             router.push({
                 pathname: '/(auth)/otp',
                 params: { mobile: mobile.trim(), from: 'login' },
@@ -71,13 +82,15 @@ export default function Login() {
                     <Ionicons name="arrow-back" size={24} color={BrandColors.primary} />
                 </TouchableOpacity>
                 <Text style={styles.heading}>
-                    Login
+                    {role === 'CUSTOMER' ? 'Customer Login' : 'Partner Login'}
                 </Text>
             </View>
             <View style={styles.content}>
                 <Image source={require('@/assets/images/upworx-logo.png')} style={styles.logo} />
 
-                <Text style={styles.title}>Welcome Back!</Text>
+                <Text style={styles.title}>
+                    {role === 'CUSTOMER' ? 'Welcome Back!' : 'Welcome Partner!'}
+                </Text>
 
                 <TextInput
                     placeholder="Phone or Email"
@@ -140,6 +153,35 @@ export default function Login() {
                         <Text style={styles.link}> Create Account</Text>
                     </TouchableOpacity>
                 </View>
+                <TouchableOpacity
+                    onPress={() => {
+                        setRole(prev => (prev === 'CUSTOMER' ? 'PARTNER' : 'CUSTOMER'));
+                        setMobile('');
+                        setPassword('');
+                    }}
+                    disabled={loading}
+                    style={[
+                        styles.roleSwitchBtn,
+                        role === 'PARTNER' && styles.roleSwitchActive,
+                        loading && styles.disabledBtn,
+                    ]}
+                >
+                    <Ionicons
+                        name={role === 'CUSTOMER' ? 'briefcase-outline' : 'person-outline'}
+                        size={18}
+                        color={role === 'CUSTOMER' ? BrandColors.primary : '#fff'}
+                        style={{ marginRight: 8 }}
+                    />
+
+                    <Text
+                        style={[
+                            styles.roleSwitchText,
+                            role === 'PARTNER' && styles.roleSwitchTextActive,
+                        ]}
+                    >
+                        {role === 'CUSTOMER' ? 'Switch to Partner Login' : 'Switch to Customer Login'}
+                    </Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -226,5 +268,27 @@ const styles = StyleSheet.create({
     },
     disabledBtn: {
         opacity: 0.6,
+    },
+    roleSwitchBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 30,
+        borderWidth: 1.5,
+        borderColor: BrandColors.primary,
+        backgroundColor: 'transparent',
+        marginVertical: 14,
+    },
+    roleSwitchActive: {
+        backgroundColor: BrandColors.primary,
+    },
+    roleSwitchText: {
+        fontWeight: '700',
+        color: BrandColors.primary,
+        fontSize: 15,
+    },
+    roleSwitchTextActive: {
+        color: '#fff',
     },
 });

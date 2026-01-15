@@ -5,12 +5,14 @@ export interface User {
     email: string;
     phone: string;
     image: string | null;
+    role?: 'CUSTOMER' | 'PARTNER';
 }
 
 // Auth request types
 export interface LoginRequest {
     mobile: string;
     password: string;
+    role: 'CUSTOMER' | 'PARTNER';
 }
 
 export interface RegisterRequest {
@@ -28,6 +30,7 @@ export interface VerifyOtpRequest {
 
 export interface ResendOtpRequest {
     mobile: string;
+    role: 'CUSTOMER' | 'PARTNER';
 }
 
 // Auth response types
@@ -36,6 +39,7 @@ export interface LoginResponse {
     message: string;
     token: string;
     user: User;
+    role: 'CUSTOMER' | 'PARTNER';
 }
 
 export interface RegisterResponse {

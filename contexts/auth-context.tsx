@@ -4,10 +4,11 @@ import { User } from '../lib/types/auth';
 
 interface AuthContextType {
     user: User | null;
+    userRole: 'CUSTOMER' | 'PARTNER' | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     setUser: (user: User | null) => void;
-    login: (token: string, userData: User) => Promise<void>;
+    login: (token: string, userData: User, role?: 'CUSTOMER' | 'PARTNER') => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
+    const [userRole, setUserRole] = useState<'CUSTOMER' | 'PARTNER' | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -26,9 +28,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             const token = await StorageService.getAccessToken();
             const userData = await StorageService.getUserData<User>();
+            const role = await StorageService.getUserRole();
 
             if (token && userData) {
                 setUser(userData);
+                setUserRole(role || userData.role || 'CUSTOMER');
             }
         } catch (error) {
             console.error('Error checking auth:', error);
@@ -37,10 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const login = async (token: string, userData: User) => {
+    const login = async (token: string, userData: User, role?: 'CUSTOMER' | 'PARTNER') => {
         try {
-            await StorageService.setAuthData(token, userData);
+            const finalRole = role || userData.role || 'CUSTOMER';
+            await StorageService.setAuthData(token, userData, finalRole);
             setUser(userData);
+            setUserRole(finalRole);
         } catch (error) {
             console.error('Error logging in:', error);
             throw error;
@@ -52,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await StorageService.clearAuth();
             await StorageService.clearAll();
             setUser(null);
+            setUserRole(null);
         } catch (error) {
             console.error('Error logging out:', error);
             throw error;
@@ -62,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <AuthContext.Provider
             value={{
                 user,
+                userRole,
                 isAuthenticated: !!user,
                 isLoading,
                 setUser,

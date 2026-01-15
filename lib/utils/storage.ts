@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
     ACCESS_TOKEN: '@upworx/access_token',
     REFRESH_TOKEN: '@upworx/refresh_token',
     USER_DATA: '@upworx/user_data',
+    USER_ROLE: '@upworx/user_role',
     SELECTED_CITY: '@upworx/selected_city',
 } as const;
 
@@ -83,14 +84,20 @@ export class StorageService {
     }
 
     /**
-     * Store auth data (token and user)
+     * Store auth data (token, user, and role)
      */
-    static async setAuthData(token: string, userData: Record<string, any>): Promise<void> {
+    static async setAuthData(token: string, userData: Record<string, any>, role?: string): Promise<void> {
         try {
-            await AsyncStorage.multiSet([
+            const items: [string, string][] = [
                 [STORAGE_KEYS.ACCESS_TOKEN, token],
                 [STORAGE_KEYS.USER_DATA, JSON.stringify(userData)],
-            ]);
+            ];
+
+            if (role) {
+                items.push([STORAGE_KEYS.USER_ROLE, role]);
+            }
+
+            await AsyncStorage.multiSet(items);
         } catch (error) {
             console.error('Error storing auth data:', error);
             throw new Error('Failed to store auth data');
@@ -114,6 +121,7 @@ export class StorageService {
                 STORAGE_KEYS.ACCESS_TOKEN,
                 STORAGE_KEYS.REFRESH_TOKEN,
                 STORAGE_KEYS.USER_DATA,
+                STORAGE_KEYS.USER_ROLE,
             ]);
         } catch (error) {
             console.error('Error clearing auth data:', error);
@@ -153,6 +161,31 @@ export class StorageService {
             return await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_CITY);
         } catch (error) {
             console.error('Error retrieving selected city:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Store user role
+     */
+    static async setUserRole(role: 'CUSTOMER' | 'PARTNER'): Promise<void> {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEYS.USER_ROLE, role);
+        } catch (error) {
+            console.error('Error storing user role:', error);
+            throw new Error('Failed to store user role');
+        }
+    }
+
+    /**
+     * Get user role
+     */
+    static async getUserRole(): Promise<'CUSTOMER' | 'PARTNER' | null> {
+        try {
+            const role = await AsyncStorage.getItem(STORAGE_KEYS.USER_ROLE);
+            return role as 'CUSTOMER' | 'PARTNER' | null;
+        } catch (error) {
+            console.error('Error retrieving user role:', error);
             return null;
         }
     }

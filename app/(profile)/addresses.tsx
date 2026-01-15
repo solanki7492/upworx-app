@@ -374,6 +374,7 @@ export default function AddressesScreen() {
                     {addresses.map((address) => (
                         <View key={address.id} style={styles.addressCard}>
                             <View style={styles.addressHeader}>
+
                                 <View style={styles.addressTypeContainer}>
                                     <Ionicons
                                         name={getAddressTypeIcon(address.address_type) as any}
@@ -381,9 +382,10 @@ export default function AddressesScreen() {
                                         color={BrandColors.primary}
                                     />
                                     <Text style={styles.addressType}>
-                                        {address.address_type.charAt(0).toUpperCase() + address.address_type.slice(1)}
+                                        {address.address_type ? address.address_type.charAt(0).toUpperCase() + address.address_type.slice(1) : 'Other'}
                                     </Text>
                                 </View>
+
                                 <View style={styles.addressActions}>
                                     <TouchableOpacity
                                         onPress={() => openEditModal(address)}

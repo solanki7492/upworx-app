@@ -79,7 +79,7 @@ export default function OrdersScreen() {
             const newOrders = response.data.data;
 
             setOrders(prev =>
-            pageNumber === 1 ? newOrders : [...prev, ...newOrders]
+                pageNumber === 1 ? newOrders : [...prev, ...newOrders]
             );
 
             setPage(response.data.current_page);
@@ -158,12 +158,12 @@ export default function OrdersScreen() {
                     const paddingToBottom = 100;
 
                     if (
-                    layoutMeasurement.height + contentOffset.y >=
-                    contentSize.height - paddingToBottom
+                        layoutMeasurement.height + contentOffset.y >=
+                        contentSize.height - paddingToBottom
                     ) {
-                    if (hasMore && !loadingMore) {
-                        loadOrders(page + 1);
-                    }
+                        if (hasMore && !loadingMore) {
+                            loadOrders(page + 1);
+                        }
                     }
                 }}
                 scrollEventThrottle={16}
