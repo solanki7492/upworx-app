@@ -1,51 +1,51 @@
 export interface Lead {
-    id: number;
-    order_id: number;
-    booking_status_id: number;
-    package_id: string;
-    parent_category_id: number;
-    quantity: number;
-    price: number;
-    visiting_inspection_cost: number | null;
-    repair_cost: number | null;
-    convenience_cost: number | null;
-    total_price: number | null;
-    tax: string;
-    commission: string;
-    token: string;
-    deduction: number;
-    service_date: string;
-    service_time: string;
-    message: string;
-    repair_text: string | null;
-    payment_status: string | null;
-    transaction_id: string | null;
-    assign_partner_id: number | null;
-    cancel_by_id: number | null;
-    assign_data: any | null;
-    cancel_data: any | null;
-    transaction_data: any | null;
-    order_item_status: string | null;
+  id: number;
+  order_id: number;
+  booking_status_id: number;
+  package_id: string;
+  parent_category_id: number;
+  quantity: number;
+  price: number;
+  visiting_inspection_cost: number | null;
+  repair_cost: number | null;
+  convenience_cost: number | null;
+  total_price: number | null;
+  tax: string;
+  commission: string;
+  token: string;
+  deduction: number;
+  service_date: string;
+  service_time: string;
+  message: string;
+  repair_text: string | null;
+  payment_status: string | null;
+  transaction_id: string | null;
+  assign_partner_id: number | null;
+  cancel_by_id: number | null;
+  assign_data: any | null;
+  cancel_data: any | null;
+  transaction_data: any | null;
+  order_item_status: string | null;
 
-    data: LeadServiceData;
+  data: LeadServiceData;
 
-    is_private: number;
-    created_at: string;
-    updated_at: string;
+  is_private: number;
+  created_at: string;
+  updated_at: string;
 
-    pcj_order_item_id: number | null;
-    pid: number | null;
-    pcoid: number | null;
-    pcid: number | null;
-    pscid: number;
-    psuid: number;
-    tAmount: number | null;
-    distance: number;
-    range_area: number;
+  pcj_order_item_id: number | null;
+  pid: number | null;
+  pcoid: number | null;
+  pcid: number | null;
+  pscid: number;
+  psuid: number;
+  tAmount: number | null;
+  distance: number;
+  range_area: number;
 
-    partner_job: PartnerJob | null;
-    order_status: OrderStatus;
-    order: Order;
+  partner_job: PartnerJob | null;
+  order_status: OrderStatus;
+  order: Order;
 }
 
 export interface LeadServiceData {
@@ -122,25 +122,30 @@ export interface PartnerJob {
   id: number;
   order_item_id: number;
   partner_id: number;
+  lead_status_id: number;
+  price: number | null;
+  paid_by: string | null;
+  status: string;
+  booking_status_by_customer: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface LeadsResponse {
-    status: boolean;
-    data: {
-        current_page: number;
-        data: Lead[];
-        first_page_url: string;
-        from: number;
-        last_page: number;
-        last_page_url: string;
-        links: any[];
-        next_page_url: string | null;
-        path: string;
-        per_page: number;
-        prev_page_url: string | null;
-        to: number;
-        total: number;
-    };
+  status: boolean;
+  data: Lead[];
+  links: any[];
+  meta: {
+    current_page: number;
+    from: number;
+    last_page: number;
+    per_page: number;
+    to: number;
+    total: number;
+  };
+}
+
+export interface LeadDetailsResponse {
+  status: boolean;
+  data: Lead;
 }

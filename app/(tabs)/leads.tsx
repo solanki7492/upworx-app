@@ -1,21 +1,12 @@
-import { BrandColors } from '@/theme/colors';
+import { useAuth } from '@/contexts/auth-context';
 import { getLeads } from '@/lib/services/leads';
 import { Lead } from '@/lib/types/lead';
+import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useAuth } from '@/contexts/auth-context';
-
-const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-
-const formatTime = (time: string) => {
-    const [h, m] = time.split(':');
-    const d = new Date();
-    d.setHours(+h, +m);
-    return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-};
+import { ActivityIndicator, ScrollView, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LeadsScreen() {
     const insets = useSafeAreaInsets();
@@ -26,6 +17,7 @@ export default function LeadsScreen() {
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const { user } = useAuth();
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         loadLeads(1);
@@ -40,14 +32,23 @@ export default function LeadsScreen() {
 
             const res = await getLeads(pageNumber);
 
-            const newLeads = res.data.data;
-            setHasMore(res.data.current_page < res.data.last_page);
+            const newLeads = res.data;
+            setHasMore(res.meta.current_page < res.meta.last_page);
             setLeads(pageNumber === 1 ? newLeads : [...leads, ...newLeads]);
         } catch (err: any) {
             setError(err.message || 'Failed to load leads');
         } finally {
             setLoading(false);
             setLoadingMore(false);
+        }
+    };
+
+    const onRefresh = async () => {
+        try {
+            setRefreshing(true);
+            await loadLeads(1);
+        } finally {
+            setRefreshing(false);
         }
     };
 
@@ -104,6 +105,14 @@ export default function LeadsScreen() {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 30 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[BrandColors.primary]}
+                        tintColor={BrandColors.primary}
+                    />
+                }
                 onScroll={({ nativeEvent }) => {
                     const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
                     const paddingToBottom = 100;
@@ -148,7 +157,7 @@ export default function LeadsScreen() {
                                     color={BrandColors.mutedText}
                                 />
                                 <Text style={styles.text}>
-                                    {formatDate(lead.service_date)} at {formatTime(lead.service_time)}
+                                    {lead.service_date} at {lead.service_time}
                                 </Text>
                             </View>
 
@@ -165,7 +174,7 @@ export default function LeadsScreen() {
                                 </View>
 
                                 <Text style={styles.value}>
-                                    {formatDate(lead.service_date)}, {formatTime(lead.service_time)}
+                                    {lead.service_date}, {lead.service_time}
                                 </Text>
 
                                 {/* Service Address */}
@@ -220,7 +229,13 @@ export default function LeadsScreen() {
                             <View style={styles.footer}>
                                 <Text style={styles.amount}>₹{lead.price}</Text>
 
-                                <TouchableOpacity style={styles.acceptBtn}>
+                                <TouchableOpacity
+                                    style={styles.acceptBtn}
+                                    onPress={() => router.push({
+                                        pathname: '/(lead)/lead-details',
+                                        params: { id: lead.id }
+                                    })}
+                                >
                                     <Text style={styles.acceptText}>View Lead</Text>
                                     <Ionicons name="chevron-forward" size={16} color="#fff" />
                                 </TouchableOpacity>

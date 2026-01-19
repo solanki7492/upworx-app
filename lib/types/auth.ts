@@ -6,6 +6,7 @@ export interface User {
     phone: string;
     image: string | null;
     role?: 'CUSTOMER' | 'PARTNER';
+    is_able_to_accept_lead?: boolean;
 }
 
 // Auth request types
