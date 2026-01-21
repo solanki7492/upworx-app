@@ -85,3 +85,27 @@ export const logout = async (): Promise<LogoutResponse> => {
         return handleApiError(error);
     }
 };
+
+/**
+ * Change password for current user
+ * @param currentPassword - Current password
+ * @param newPassword - New password
+ * @returns Promise with logout response
+ * @throws ApiException if the request fails
+ */
+export const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string
+): Promise<LogoutResponse> => {
+    try {
+        const response = await apiClient.post<LogoutResponse>('/auth/change-password', {
+            current_password: currentPassword,
+            password: newPassword,
+            password_confirmation: confirmPassword,
+        });
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+}

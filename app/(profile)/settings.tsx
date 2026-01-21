@@ -89,18 +89,6 @@ export default function SettingsScreen() {
                                 trackColor={{ false: BrandColors.border, true: BrandColors.primary }}
                             />
                         </View>
-
-                        <View style={[styles.settingItem, styles.lastSettingItem]}>
-                            <View style={styles.settingInfo}>
-                                <Ionicons name="play-circle-outline" size={20} color={BrandColors.text} />
-                                <Text style={styles.settingText}>Auto-play Videos</Text>
-                            </View>
-                            <Switch
-                                value={settings.autoPlayVideos}
-                                onValueChange={(value) => setSettings((prev) => ({ ...prev, autoPlayVideos: value }))}
-                                trackColor={{ false: BrandColors.border, true: BrandColors.primary }}
-                            />
-                        </View>
                     </View>
                 </View>
 
@@ -170,7 +158,7 @@ export default function SettingsScreen() {
                             <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.settingItem, styles.lastSettingItem]} activeOpacity={0.7}>
+                        <TouchableOpacity style={[styles.settingItem, styles.lastSettingItem]} activeOpacity={0.7} onPress={() => router.push('/(profile)/change-password')}>
                             <View style={styles.settingInfo}>
                                 <Ionicons name="key-outline" size={20} color={BrandColors.text} />
                                 <Text style={styles.settingText}>Change Password</Text>

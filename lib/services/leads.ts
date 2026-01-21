@@ -1,15 +1,17 @@
 import { apiClient } from '../api/config';
 import { handleApiError } from '../api/error-handler';
-import { LeadDetailsResponse, LeadsResponse } from '../types/lead';
+import { LeadDetailsResponse, LeadsResponse, LeadStatusesResponse } from '../types/lead';
 
 /**
  * Get all leads for the authenticated user
  * @returns Promise with leads array
  * @throws ApiException if the request fails
  */
-export const getLeads = async (page: number): Promise<LeadsResponse> => {
+export const getLeads = async (page: number, filters = {}): Promise<LeadsResponse> => {
     try {
-        const response = await apiClient.get<LeadsResponse>(`/partner/leads?page=${page}`);
+        const response = await apiClient.get<LeadsResponse>(`/partner/leads?page=${page}`, {
+            params: filters,
+        });
         return response.data;
     } catch (error) {
         return handleApiError(error);
@@ -85,6 +87,20 @@ export const completeLead = async (
             `/partner/lead/${id}/complete`,
             data
         );
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+}
+
+/**
+ * Get lead statuses
+ * @returns Promise with lead statuses
+ * @throws ApiException if the request fails
+ */
+export const getLeadStatuses = async (): Promise<LeadStatusesResponse> => {
+    try {
+        const response = await apiClient.get<LeadStatusesResponse>('/partner/lead-statuses');
         return response.data;
     } catch (error) {
         return handleApiError(error);

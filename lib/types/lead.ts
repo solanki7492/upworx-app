@@ -149,3 +149,16 @@ export interface LeadDetailsResponse {
   status: boolean;
   data: Lead;
 }
+
+export interface LeadStatusesResponse {
+  status: boolean;
+  data: {
+    statuses: Statuses[];
+  };
+}
+
+export interface Statuses {
+  id: number;
+  name: string;
+  slug: string;
+}

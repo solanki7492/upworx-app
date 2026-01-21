@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/auth-context';
 import { createAddress, deleteAddress, getAddresses, updateAddress } from '@/lib';
 import { Address, CreateAddressRequest } from '@/lib/types/address';
 import { BrandColors } from '@/theme/colors';
@@ -11,11 +12,11 @@ import {
     RefreshControl,
     ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
-    Switch
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,6 +34,7 @@ export default function AddressesScreen() {
     const [addressQuery, setAddressQuery] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const { user } = useAuth();
 
     // Form state
     const [formData, setFormData] = useState({
@@ -45,6 +47,7 @@ export default function AddressesScreen() {
         state: '',
         default_address: 0,
         address_type: 'home' as AddressType,
+        range_area: '',
         latitude: '',
         longitude: '',
     });
@@ -203,14 +206,37 @@ export default function AddressesScreen() {
         let city = '';
         let state = '';
 
+        const excludedTypes = [
+            'administrative_area_level_1', // state
+            'country',
+            'postal_code',
+        ];
+
+        const addressLine2 = result.address_components
+            .filter(
+                (component: any) =>
+                    !component.types.some((type: string) =>
+                        excludedTypes.includes(type)
+                    )
+            )
+            .map((component: any) => component.long_name)
+            .join(', ');
+
         result.address_components.forEach((component: any) => {
-            if (component.types.includes('locality')) city = component.long_name;
-            if (component.types.includes('administrative_area_level_1')) state = component.long_name;
+            if (component.types.includes('locality')) {
+                city = component.long_name;
+            }
+
+            if (component.types.includes('administrative_area_level_1')) {
+                state = component.long_name;
+            }
         });
+
+        setAddressQuery(addressLine2);
 
         setFormData(prev => ({
             ...prev,
-            address_line_2: item.description,
+            address_line_2: addressLine2,
             city,
             state,
             latitude: result.geometry.location.lat.toString(),
@@ -230,6 +256,7 @@ export default function AddressesScreen() {
             state: '',
             default_address: 0,
             address_type: 'home',
+            range_area: '',
             latitude: '',
             longitude: '',
         });
@@ -248,10 +275,42 @@ export default function AddressesScreen() {
             state: address.state,
             default_address: address.default_address ?? 0,
             address_type: address.address_type,
+            range_area: address.range_area != null ? address.range_area.toString() : '',
             latitude: address.latitude.toString(),
             longitude: address.longitude.toString(),
         });
         setModalVisible(true);
+    };
+
+    const buildPayload = () => {
+        const basePayload = {
+            name: formData.name,
+            mobile_number: formData.mobile_number,
+            pincode: formData.pincode,
+            address_line_1: formData.address_line_1,
+            address_line_2: formData.address_line_2,
+            city: formData.city,
+            state: formData.state,
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+            address_type: formData.address_type,
+        };
+
+        if (user?.role === 'CUSTOMER') {
+            return {
+                ...basePayload,
+                default_address: formData.default_address,
+            };
+        }
+
+        if (user?.role === 'PARTNER') {
+            return {
+                ...basePayload,
+                range_area: formData.range_area,
+            };
+        }
+
+        return basePayload;
     };
 
     const handleSubmit = async () => {
@@ -279,18 +338,10 @@ export default function AddressesScreen() {
 
         try {
             setSubmitting(true);
+            const payload = buildPayload();
+
             const requestData: CreateAddressRequest = {
-                name: formData.name,
-                mobile_number: formData.mobile_number,
-                pincode: formData.pincode,
-                address_line_1: formData.address_line_2,
-                address_line_2: formData.address_line_1,
-                city: formData.city,
-                state: formData.state,
-                latitude: formData.latitude,
-                longitude: formData.longitude,
-                default_address: formData.default_address,
-                address_type: formData.address_type,
+                ...payload,
             };
 
             if (editingAddress) {
@@ -382,7 +433,7 @@ export default function AddressesScreen() {
                                         color={BrandColors.primary}
                                     />
                                     <Text style={styles.addressType}>
-                                        {address.address_type ? address.address_type.charAt(0).toUpperCase() + address.address_type.slice(1) : 'Other'}
+                                        {address.address_for === "partner" ? address?.range_area + " km" : address.address_type.charAt(0).toUpperCase() + address.address_type.slice(1)}
                                     </Text>
                                 </View>
 
@@ -541,47 +592,67 @@ export default function AddressesScreen() {
                             />
                         </View>
                         {/* Set Default Address */}
-                        <View style={styles.switchInputContainer}>
-                            <Text style={styles.inputLabel}>Set as Default Address</Text>
-                            <Switch
-                                value={formData.default_address === 1}
-                                onValueChange={(value) => setFormData((prev) => ({ ...prev, default_address: value ? 1 : 0 }))}
-                                trackColor={{ false: BrandColors.border, true: BrandColors.primary }}
-                            />
-                        </View>
+                        {user?.role === 'CUSTOMER' ? (
+                            <>
+                                <View style={styles.switchInputContainer}>
+                                    <Text style={styles.inputLabel}>Set as Default Address</Text>
+                                    <Switch
+                                        value={formData.default_address === 1}
+                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, default_address: value ? 1 : 0 }))}
+                                        trackColor={{ false: BrandColors.border, true: BrandColors.primary }}
+                                    />
+                                </View>
 
-                        {/* Address Type */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Address Type</Text>
-                            <View style={styles.addressTypeButtons}>
-                                {(['home', 'work', 'other'] as AddressType[]).map((type) => (
-                                    <TouchableOpacity
-                                        key={type}
-                                        style={[
-                                            styles.typeButton,
-                                            formData.address_type === type && styles.typeButtonActive,
-                                        ]}
-                                        onPress={() => setFormData((prev) => ({ ...prev, address_type: type }))}
-                                    >
-                                        <Ionicons
-                                            name={getAddressTypeIcon(type) as any}
-                                            size={18}
-                                            color={
-                                                formData.address_type === type ? BrandColors.card : BrandColors.primary
-                                            }
-                                        />
-                                        <Text
-                                            style={[
-                                                styles.typeButtonText,
-                                                formData.address_type === type && styles.typeButtonTextActive,
-                                            ]}
-                                        >
-                                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                                <View style={styles.inputContainer}>
+                                    <Text style={styles.inputLabel}>Address Type</Text>
+                                    <View style={styles.addressTypeButtons}>
+                                        {(['home', 'work', 'other'] as AddressType[]).map((type) => (
+                                            <TouchableOpacity
+                                                key={type}
+                                                style={[
+                                                    styles.typeButton,
+                                                    formData.address_type === type && styles.typeButtonActive,
+                                                ]}
+                                                onPress={() => setFormData((prev) => ({ ...prev, address_type: type }))}
+                                            >
+                                                <Ionicons
+                                                    name={getAddressTypeIcon(type) as any}
+                                                    size={18}
+                                                    color={
+                                                        formData.address_type === type ? BrandColors.card : BrandColors.primary
+                                                    }
+                                                />
+                                                <Text
+                                                    style={[
+                                                        styles.typeButtonText,
+                                                        formData.address_type === type && styles.typeButtonTextActive,
+                                                    ]}
+                                                >
+                                                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
+                            </>
+                        ) : (
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.inputLabel}>Service Range Area (in km) *</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={formData.range_area}
+                                    onChangeText={(text) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            range_area: text.replace(/[^0-9]/g, ''),
+                                        }))
+                                    }
+                                    placeholder="Enter service range area"
+                                    placeholderTextColor={BrandColors.mutedText}
+                                    keyboardType="number-pad"
+                                />
                             </View>
-                        </View>
+                        )}
 
                         <TouchableOpacity
                             style={[styles.submitButton, submitting && styles.submitButtonDisabled]}

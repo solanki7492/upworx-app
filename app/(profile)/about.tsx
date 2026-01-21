@@ -10,11 +10,11 @@ export default function AboutScreen() {
     const router = useRouter();
 
     const handleWebsite = () => {
-        Linking.openURL('https://upworx.com');
+        Linking.openURL('https://upworx.in');
     };
 
     const handleEmail = () => {
-        Linking.openURL('mailto:info@upworx.com');
+        Linking.openURL('mailto:info@upworx.in');
     };
 
     const handleSocialMedia = (platform: string) => {

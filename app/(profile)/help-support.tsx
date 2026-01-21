@@ -67,15 +67,15 @@ export default function HelpSupportScreen() {
     };
 
     const handleCall = () => {
-        Linking.openURL('tel:+919876543210');
+        Linking.openURL('tel:+918273737872');
     };
 
     const handleEmail = () => {
-        Linking.openURL('mailto:support@upworx.com');
+        Linking.openURL('mailto:support@upworx.in');
     };
 
     const handleWhatsApp = () => {
-        Linking.openURL('https://wa.me/919876543210');
+        Linking.openURL('https://wa.me/918273737872');
     };
 
     const handleSubmit = () => {
