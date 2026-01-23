@@ -11,7 +11,7 @@ import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
@@ -139,7 +139,7 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.avatar}>
           {
             user?.image ? (
-              <Text style={styles.avatarText}>{getInitials(user.name)}</Text>
+              <Image source={{ uri: user.image }} style={styles.avatar} resizeMode="cover" />
             ) : (
               <Ionicons name="person" size={24} color={BrandColors.background} />
             )

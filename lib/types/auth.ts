@@ -6,7 +6,14 @@ export interface User {
     phone: string;
     image: string | null;
     role?: 'CUSTOMER' | 'PARTNER';
+    dob?: string;
+    gender?: string;
+    alternate_phone?: string;
     is_able_to_accept_lead?: boolean;
+    at_least_one_id_proof_verified?: {
+        name: string;
+        url: string;
+    }
 }
 
 // Auth request types

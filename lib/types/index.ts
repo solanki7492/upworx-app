@@ -5,4 +5,4 @@ export * from './booking';
 export * from './order';
 export * from './service';
 export * from './earning';
-
+export * from './banking';

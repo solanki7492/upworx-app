@@ -8,7 +8,12 @@ export default function ProfileLayout() {
             }}
         >
             <Stack.Screen name="addresses" />
+            <Stack.Screen name="availability" />
+            <Stack.Screen name="change-password" />
+            <Stack.Screen name='services'/>
+            <Stack.Screen name="banking" />
             <Stack.Screen name="edit-profile" />
+            <Stack.Screen name="partner-edit-profile" />
             <Stack.Screen name="payment-methods" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="help-support" />
