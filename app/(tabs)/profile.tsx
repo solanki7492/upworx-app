@@ -207,7 +207,7 @@ export default function ProfileScreen() {
                                 activeOpacity={0.7}
                                 onPress={() =>
                                     router.push(
-                                        user?.role === 'PARTNER'
+                                        user?.role === 'PARTNER' && item.id === '1'
                                             ? '/(profile)/partner-edit-profile'
                                             : (item.route as any)
                                     )

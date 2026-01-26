@@ -19,6 +19,11 @@ const MAPPING = {
   'wrench.and.screwdriver.fill': 'build',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'list.bullet.clipboard.fill': 'list-alt',
+  'person.fill': 'person',
+  'person.2.fill': 'people',
+  'dollarsign.circle.fill': 'attach-money',
+  'doc.text.fill': 'description',
 } as IconMapping;
 
 /**

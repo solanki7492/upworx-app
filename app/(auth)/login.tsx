@@ -64,7 +64,7 @@ export default function Login() {
         try {
             setLoading(true);
             await resendOtp({ mobile: mobile.trim(), role: role });
-            router.push({
+            router.replace({
                 pathname: '/(auth)/otp',
                 params: { mobile: mobile.trim(), from: 'login' },
             });

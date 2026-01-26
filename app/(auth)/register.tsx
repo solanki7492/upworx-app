@@ -64,7 +64,7 @@ export default function Register() {
 
             if (response.status) {
                 Alert.alert('Success', response.message);
-                router.push({
+                router.replace({
                     pathname: '/(auth)/otp',
                     params: {
                         mobile: formData.phone.trim(),

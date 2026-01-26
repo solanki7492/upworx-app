@@ -8,7 +8,7 @@ import 'react-native-reanimated';
 import { AppTheme } from '../theme/navigation';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: '(tabs)',
 };
 
 export default function RootLayout() {
