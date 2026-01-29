@@ -11,7 +11,7 @@ import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
@@ -50,6 +50,7 @@ export default function HomeScreen() {
           const cityName = CITIES.find((c) => c.toLowerCase() === storedCity);
           if (cityName) {
             setSelectedCity(cityName);
+            setCity(cityName.toLowerCase());
           }
         } else {
           // Show modal if no city is stored
@@ -64,14 +65,20 @@ export default function HomeScreen() {
     checkStoredCity();
   }, []);
 
-  const handleCitySelect = (city: string) => {
+  const handleCitySelect = async (city: string) => {
     setSelectedCity(city);
+    setCity(city.toLowerCase()); // Sync with app context
     setShowCityModal(false);
+    try {
+      await StorageService.setSelectedCity(city.toLowerCase());
+    } catch (error) {
+      console.error('Error saving city from modal:', error);
+    }
   };
 
   const handleDropdownCityChange = async (city: string) => {
     setSelectedCity(city);
-    setCity(city);
+    setCity(city.toLowerCase());
     setOpen(false);
     try {
       await StorageService.setSelectedCity(city.toLowerCase());

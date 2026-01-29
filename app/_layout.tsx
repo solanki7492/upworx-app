@@ -26,6 +26,7 @@ export default function RootLayout() {
               <Stack.Screen name="(cart)" options={{ headerShown: false }} />
               <Stack.Screen name="(profile)" options={{ headerShown: false }} />
               <Stack.Screen name="(lead)" options={{ headerShown: false }} />
+              <Stack.Screen name="(search)" options={{ headerShown: false }} />
             </Stack>
             <StatusBar style="auto" />
           </CartProvider>

@@ -1,14 +1,14 @@
+import OrderStatusOverlay from '@/components/ui/order-status-overlay';
 import { useCart } from '@/contexts/cart-context';
 import { getAddresses } from '@/lib/services/address';
 import { payLater } from '@/lib/services/booking';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import OrderStatusOverlay from '@/components/ui/order-status-overlay';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const problemOptions: Record<string, string[]> = {
     'ac': ['Over Heating', 'Water Leakage', 'Slow cooling', 'Abnormal Sound', 'Dirty air filters'],
@@ -482,9 +482,34 @@ export default function CartScreen() {
                                                     <View style={styles.qtyControl}>
                                                         <TouchableOpacity
                                                             onPress={() => {
-                                                                const updatedServices = [...order.services];
                                                                 const currentQty = parseInt(service.qty);
-                                                                if (currentQty > 1) {
+
+                                                                if (currentQty === 1) {
+                                                                    // Remove this service from the order
+                                                                    const updatedServices = order.services.filter((_: any, i: number) => i !== idx);
+
+                                                                    // If no services left, remove the entire order
+                                                                    if (updatedServices.length === 0) {
+                                                                        handleRemoveOrder(order.orderId);
+                                                                    } else {
+                                                                        // Update order with remaining services
+                                                                        const newTotalQty = updatedServices.reduce((sum: number, s: any) => sum + parseInt(s.qty), 0);
+                                                                        const newTotalPrice = updatedServices.reduce((sum: number, s: any) => sum + (parseInt(s.price) * parseInt(s.qty)), 0);
+                                                                        updateOrder(order.orderId, {
+                                                                            services: updatedServices,
+                                                                            totalQuantity: newTotalQty,
+                                                                            totalPrice: newTotalPrice,
+                                                                            totals: {
+                                                                                subtotal: newTotalPrice,
+                                                                                discount: 0,
+                                                                                tax: 0,
+                                                                                grandTotal: newTotalPrice,
+                                                                            },
+                                                                        });
+                                                                    }
+                                                                } else if (currentQty > 1) {
+                                                                    // Decrement quantity
+                                                                    const updatedServices = [...order.services];
                                                                     updatedServices[idx] = { ...service, qty: String(currentQty - 1) };
                                                                     const newTotalQty = updatedServices.reduce((sum, s) => sum + parseInt(s.qty), 0);
                                                                     const newTotalPrice = updatedServices.reduce((sum, s) => sum + (parseInt(s.price) * parseInt(s.qty)), 0);

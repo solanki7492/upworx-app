@@ -1,6 +1,8 @@
 import { BrandColors } from '@/theme/colors';
 import { useRef, useState } from 'react';
 import { Animated, Dimensions, Image, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useApp } from '@/contexts/app-context';
 
 type OfferStackProps = {
     onChange?: (offer: any) => void;
@@ -11,9 +13,9 @@ const CARD_WIDTH = width - 40;
 const CARD_HEIGHT = 170;
 
 const offers = [
-    { id: '1', title: 'AC Repair', subtitle: 'Flat 20% Off', image: require('@/assets/images/handyman.png') },
-    { id: '2', title: 'Washing Machine', subtitle: 'Free Inspection', image: require('@/assets/images/handyman.png') },
-    { id: '3', title: 'Electrician', subtitle: 'Starting at ₹299', image: require('@/assets/images/handyman.png') },
+    { id: '1', title: 'AC Repair', slug: 'ac', subtitle: 'Flat 20% Off', image: require('@/assets/images/handyman.png') },
+    { id: '2', title: 'Washing Machine', slug: 'washing-machine', subtitle: 'Free Inspection', image: require('@/assets/images/handyman.png') },
+    { id: '3', title: 'Electrician', slug: 'electrician', subtitle: 'Starting at ₹299', image: require('@/assets/images/handyman.png') },
 ];
 
 export function OfferStack({ onChange }: OfferStackProps) {
@@ -21,6 +23,8 @@ export function OfferStack({ onChange }: OfferStackProps) {
     const pan = useRef(new Animated.ValueXY()).current;
     const fade = useRef(new Animated.Value(1)).current;
     const scale = useRef(new Animated.Value(1)).current;
+    const router = useRouter();
+    const { city } = useApp();
 
     const panResponder = useRef(
         PanResponder.create({
@@ -88,7 +92,16 @@ export function OfferStack({ onChange }: OfferStackProps) {
                 <View style={styles.content}>
                     <Text style={styles.title}>{current.title}</Text>
                     <Text style={styles.subtitle}>{current.subtitle}</Text>
-                    <TouchableOpacity style={styles.availButton}>
+                    <TouchableOpacity style={styles.availButton} onPress={
+                        () => router.push({
+                            pathname: '/(booking)',
+                            params: {
+                                slug: current.slug,
+                                serviceName: current.title,
+                                city: city,
+                            },
+                        })
+                    }>
                         <Text style={styles.availNow}>Book Now</Text>
                     </TouchableOpacity>
                 </View>

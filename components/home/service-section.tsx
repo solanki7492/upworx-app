@@ -1,9 +1,10 @@
 import { useApp } from '@/contexts/app-context';
 import { useAuth } from '@/contexts/auth-context';
+import { StorageService } from '@/lib/utils/storage';
 import { BrandColors } from '@/theme/colors';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, FlatList, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Item = { id: number; icon_image: ImageSourcePropType | string; name: string; slug: string };
 
@@ -18,8 +19,18 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
   const { city } = useApp();
   const { isAuthenticated } = useAuth();
 
-  const checkAuthAndRedirect = (onSuccess: () => void) => {
+  const checkAuthAndRedirect = async (item: Item) => {
     if (!isAuthenticated) {
+      // Store the service details for redirect after login
+      await StorageService.setPendingRedirect({
+        pathname: '/(booking)',
+        params: {
+          slug: item.slug,
+          serviceName: item.name,
+          city: city,
+        },
+      });
+
       Alert.alert(
         'Login Required',
         'Please login to continue.',
@@ -31,7 +42,16 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
       );
       return;
     }
-    onSuccess();
+
+    // User is authenticated, navigate directly
+    router.push({
+      pathname: '/(booking)',
+      params: {
+        slug: item.slug,
+        serviceName: item.name,
+        city: city,
+      },
+    });
   };
 
   return (
@@ -56,18 +76,7 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
           return (
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() =>
-              checkAuthAndRedirect(() => {
-                router.push({
-                  pathname: '/(booking)',
-                  params: {
-                    slug: item.slug,
-                    serviceName: item.name,
-                    city: city,
-                  },
-                });
-              })
-            }
+              onPress={() => checkAuthAndRedirect(item)}
               style={[styles.serviceCard, { width: CARD_WIDTH }, !isLastColumn && { marginRight: GAP }]}
             >
               <View style={styles.imageWrapper}>

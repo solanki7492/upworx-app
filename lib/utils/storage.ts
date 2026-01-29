@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
     USER_DATA: '@upworx/user_data',
     USER_ROLE: '@upworx/user_role',
     SELECTED_CITY: '@upworx/selected_city',
+    PENDING_REDIRECT: '@upworx/pending_redirect',
 } as const;
 
 export class StorageService {
@@ -187,6 +188,42 @@ export class StorageService {
         } catch (error) {
             console.error('Error retrieving user role:', error);
             return null;
+        }
+    }
+
+    /**
+     * Store pending redirect data for post-login navigation
+     */
+    static async setPendingRedirect(redirectData: Record<string, any>): Promise<void> {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEYS.PENDING_REDIRECT, JSON.stringify(redirectData));
+        } catch (error) {
+            console.error('Error storing pending redirect:', error);
+            throw new Error('Failed to store pending redirect');
+        }
+    }
+
+    /**
+     * Get pending redirect data
+     */
+    static async getPendingRedirect(): Promise<Record<string, any> | null> {
+        try {
+            const redirectData = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_REDIRECT);
+            return redirectData ? JSON.parse(redirectData) : null;
+        } catch (error) {
+            console.error('Error retrieving pending redirect:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Clear pending redirect data
+     */
+    static async clearPendingRedirect(): Promise<void> {
+        try {
+            await AsyncStorage.removeItem(STORAGE_KEYS.PENDING_REDIRECT);
+        } catch (error) {
+            console.error('Error clearing pending redirect:', error);
         }
     }
 }

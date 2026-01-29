@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.example.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://upworx03.upworx.in/api';
 
 export const publicApi = axios.create({
   baseURL: API_BASE_URL,

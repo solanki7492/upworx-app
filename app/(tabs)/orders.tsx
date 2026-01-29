@@ -5,7 +5,7 @@ import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/auth-context';
 import { WebView } from 'react-native-webview';
@@ -70,11 +70,18 @@ export default function OrdersScreen() {
     const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
     const [showPaymentWebView, setShowPaymentWebView] = useState(false);
 
+    const [refreshing, setRefreshing] = useState(false);
+
     useEffect(() => {
         loadOrders(1);
     }, []);
 
-    const loadOrders = async (pageNumber = 1) => {
+    const loadOrders = async (pageNumber = 1, refresh = false) => {
+
+        if (refresh) {
+            setOrders([]);
+        }
+
         if (loadingMore || !hasMore) return;
 
         try {
@@ -97,6 +104,16 @@ export default function OrdersScreen() {
             setLoading(false);
             setLoadingMore(false);
         }
+    };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+
+        // reset pagination
+        setPage(1);
+
+        await loadOrders(1, true);
+        setRefreshing(false);
     };
 
     const handleOrderPress = (orderId: number) => {
@@ -205,7 +222,16 @@ export default function OrdersScreen() {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 30 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#0A84FF']}
+                        tintColor="#0A84FF"
+                    />
+                }
                 onScroll={({ nativeEvent }) => {
+                    if (loadingMore || !hasMore || refreshing) return;
                     const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
                     const paddingToBottom = 100;
 
@@ -213,7 +239,7 @@ export default function OrdersScreen() {
                         layoutMeasurement.height + contentOffset.y >=
                         contentSize.height - paddingToBottom
                     ) {
-                        if (hasMore && !loadingMore) {
+                        if (hasMore && !loadingMore && !refreshing) {
                             loadOrders(page + 1);
                         }
                     }

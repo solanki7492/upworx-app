@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/auth-context';
-import { login as loginApi, resendOtp } from '@/lib';
+import { login as loginApi, resendOtp, StorageService } from '@/lib';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -39,12 +39,17 @@ export default function Login() {
 
             if (response.status) {
                 await authLogin(response.token, response.user, response.role);
-                //Alert.alert('Success', response.message);
-                if(response.role === 'PARTNER'){
-                    router.replace('/(tabs)/leads');
-                } else {
-                    router.replace('/(tabs)');
+
+                // Check if there's a pending redirect, if not, use default navigation
+                const pendingRedirect = await StorageService.getPendingRedirect();
+                if (!pendingRedirect) {
+                    if (response.role === 'PARTNER') {
+                        router.replace('/(tabs)/leads');
+                    } else {
+                        router.replace('/(tabs)');
+                    }
                 }
+                // If there's a pending redirect, authLogin will handle it
             } else {
                 Alert.alert('Error', response.message || 'Login failed');
             }

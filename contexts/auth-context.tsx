@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { StorageService } from '../lib';
 import { User } from '../lib/types/auth';
@@ -15,6 +16,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [userRole, setUserRole] = useState<'CUSTOMER' | 'PARTNER' | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +49,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await StorageService.setAuthData(token, userData, finalRole);
             setUser(userData);
             setUserRole(finalRole);
+
+            // Check for pending redirect after successful login
+            const pendingRedirect = await StorageService.getPendingRedirect();
+            if (pendingRedirect && pendingRedirect.pathname) {
+                // Clear the pending redirect
+                await StorageService.clearPendingRedirect();
+
+                // Navigate to the stored service
+                setTimeout(() => {
+                    router.push({
+                        pathname: pendingRedirect.pathname,
+                        params: pendingRedirect.params || {},
+                    });
+                }, 100);
+            }
         } catch (error) {
             console.error('Error logging in:', error);
             throw error;
