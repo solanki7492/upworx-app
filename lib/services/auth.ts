@@ -1,5 +1,10 @@
 import { apiClient, publicApi } from '../api/config';
+import { handleApiError } from '../api/error-handler';
 import {
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ForgotPasswordVerifyOtpRequest,
+    ForgotPasswordVerifyOtpResponse,
     LoginRequest,
     LoginResponse,
     LogoutResponse,
@@ -7,10 +12,11 @@ import {
     RegisterResponse,
     ResendOtpRequest,
     ResendOtpResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
     VerifyOtpRequest,
     VerifyOtpResponse,
 } from '../types/auth';
-import { handleApiError } from '../api/error-handler';
 
 /**
  * Login with mobile and password
@@ -109,3 +115,48 @@ export const changePassword = async (
         return handleApiError(error);
     }
 }
+
+/**
+ * Send OTP for forgot password
+ * @param data - Mobile/email and role
+ * @returns Promise with forgot password response
+ * @throws ApiException if the request fails
+ */
+export const forgotPassword = async (data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> => {
+    try {
+        const response = await publicApi.post<ForgotPasswordResponse>('/forgot-password', data);
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+};
+
+/**
+ * Verify OTP for forgot password
+ * @param data - OTP, mobile/email and role
+ * @returns Promise with verification response including token
+ * @throws ApiException if the request fails
+ */
+export const forgotPasswordVerifyOtp = async (data: ForgotPasswordVerifyOtpRequest): Promise<ForgotPasswordVerifyOtpResponse> => {
+    try {
+        const response = await publicApi.post<ForgotPasswordVerifyOtpResponse>('/forgot-password/verify-otp', data);
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+};
+
+/**
+ * Reset password with token from forgot password flow
+ * @param data - Token, new password and confirmation
+ * @returns Promise with reset password response
+ * @throws ApiException if the request fails
+ */
+export const resetPassword = async (data: ResetPasswordRequest): Promise<ResetPasswordResponse> => {
+    try {
+        const response = await publicApi.post<ResetPasswordResponse>('/reset-password', data);
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+};

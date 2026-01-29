@@ -8,11 +8,11 @@ export { apiClient } from './api/config';
 export type { Address, AddressResponse, CreateAddressRequest, GeocodingResult, GetAddressesResponse, UpdateAddressRequest } from './types/address';
 export { ApiException } from './types/api';
 export type { ApiError } from './types/api';
-export type { LoginRequest, LoginResponse, LogoutResponse, RegisterRequest, RegisterResponse, ResendOtpRequest, ResendOtpResponse, User, VerifyOtpRequest, VerifyOtpResponse } from './types/auth';
+export type { ForgotPasswordRequest, ForgotPasswordResponse, ForgotPasswordVerifyOtpRequest, ForgotPasswordVerifyOtpResponse, LoginRequest, LoginResponse, LogoutResponse, RegisterRequest, RegisterResponse, ResendOtpRequest, ResendOtpResponse, ResetPasswordRequest, ResetPasswordResponse, User, VerifyOtpRequest, VerifyOtpResponse } from './types/auth';
 export type { GetServiceByIdResponse, GetServicesResponse, Service } from './types/service';
 
 // Export services API
-export { getServiceById, getServices, login, logout, register, resendOtp, verifyOtp } from './services';
+export { forgotPassword, forgotPasswordVerifyOtp, getServiceById, getServices, login, logout, register, resendOtp, resetPassword, verifyOtp } from './services';
 export { createAddress, deleteAddress, getAddresses, updateAddress } from './services/address';
 
 // Export custom hooks

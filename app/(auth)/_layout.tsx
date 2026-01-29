@@ -4,7 +4,6 @@ export default function AuthLayout() {
   return (
     <Stack
       screenOptions={{
-        presentation: 'modal',
         headerShown: false,
       }}
     />

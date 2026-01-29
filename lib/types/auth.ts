@@ -75,3 +75,37 @@ export interface LogoutResponse {
     status: boolean;
     message: string;
 }
+
+// Forgot Password types
+export interface ForgotPasswordRequest {
+    mobile: string;
+    role: 'CUSTOMER' | 'PARTNER';
+}
+
+export interface ForgotPasswordResponse {
+    status: boolean;
+    message: string;
+}
+
+export interface ForgotPasswordVerifyOtpRequest {
+    otp: string;
+    mobile: string;
+    role: 'CUSTOMER' | 'PARTNER';
+}
+
+export interface ForgotPasswordVerifyOtpResponse {
+    status: boolean;
+    message: string;
+    token: string;
+}
+
+export interface ResetPasswordRequest {
+    token: string;
+    password: string;
+    password_confirmation: string;
+}
+
+export interface ResetPasswordResponse {
+    status: boolean;
+    message: string;
+}
