@@ -16,3 +16,27 @@ export const getLedgerItems = async (page: number): Promise<LedgerResponse> => {
         return handleApiError(error);
     }
 }
+
+export const requestWithdrawal = async (amount: number): Promise<{ status: boolean; message: string }> => {
+    try {
+        const response = await apiClient.post<{ status: boolean; message: string }>(
+            '/partner/payment/withdraw',
+            { amount }
+        );
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+}
+
+export const initAddMoney = async (amount: number): Promise<{ status: boolean; message: string; payment_url: string }> => {
+    try {
+        const response = await apiClient.post<{ status: boolean; message: string; payment_url: string }>(
+            '/partner/payment/init-add-money',
+            { amount }
+        );
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+}

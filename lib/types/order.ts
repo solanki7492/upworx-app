@@ -38,11 +38,13 @@ export interface OrderItem {
     message: string | null;
     cancel_by_id: number | null;
     assign_partner_id: number | null;
+    payment_status: string | null;
     created_at: string;
     updated_at: string;
     cart: Cart;
     order: Order;
     order_status: OrderStatus;
+    payment_transaction: PaymentTransaction | null;
 }
 
 export interface Cart {
@@ -115,6 +117,14 @@ export interface OrderStatus {
     slug: string;
     created_at: string;
     updated_at: string;
+}
+
+export interface PaymentTransaction {
+    id: number;
+    type: string;
+    amount: number;
+    status: string;
+    transaction_id: string;
 }
 
 export interface CancelBookingResponse {

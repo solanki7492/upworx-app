@@ -1,12 +1,12 @@
 import { apiClient } from '../api/config';
+import { handleApiError } from '../api/error-handler';
 import {
     CancelBookingResponse,
-    OrdersResponse,
     OrderDetailsResponse,
+    OrdersResponse,
     RescheduleBookingRequest,
     RescheduleBookingResponse,
 } from '../types/order';
-import { handleApiError } from '../api/error-handler';
 
 /**
  * Fetch orders list
@@ -70,6 +70,21 @@ export const rescheduleBooking = async (
             `/bookings/${packageId}/reschedule`,
             data
         );
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+};
+
+/**
+ * Get payment URL for an order
+ * @param orderId - The order ID
+ * @returns Promise with payment URL
+ * @throws ApiException if the request fails
+ */
+export const initPayment = async (id: number, amount: number): Promise<any> => {
+    try {
+        const response = await apiClient.post<any>('payment/init-payment', { id, amount });
         return response.data;
     } catch (error) {
         return handleApiError(error);

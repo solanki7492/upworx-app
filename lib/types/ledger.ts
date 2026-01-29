@@ -5,6 +5,7 @@ export interface LedgerItem {
     type: string;
     nature: string;
     amount: number;
+    receipt: string;
     trans_status: string;
     transaction_id: string;
     l_date: string;
