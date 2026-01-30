@@ -1,27 +1,29 @@
+import { useAuth } from '@/contexts/auth-context';
+import { getLedgerItems, initAddMoney, requestWithdrawal } from '@/lib/services/ledger';
+import { LedgerItem } from '@/lib/types/ledger';
+import { BrandColors } from '@/theme/colors';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
     StyleSheet,
     Text,
-    TouchableOpacity,
-    View,
-    Modal,
     TextInput,
-    KeyboardAvoidingView,
-    Platform
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { BrandColors } from '@/theme/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getLedgerItems, initAddMoney } from '@/lib/services/ledger';
-import { LedgerItem } from '@/lib/types/ledger';
-import { requestWithdrawal } from '@/lib/services/ledger';
 import { WebView } from 'react-native-webview';
 
 export default function LedgerScreen() {
     const insets = useSafeAreaInsets();
+
+    const { user } = useAuth();
 
     const [ledger, setLedger] = useState<LedgerItem[]>([]);
     const [page, setPage] = useState(1);
@@ -38,6 +40,8 @@ export default function LedgerScreen() {
     const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
     const [showPaymentWebView, setShowPaymentWebView] = useState(false);
     const [actionType, setActionType] = useState<'add' | 'withdraw'>('withdraw');
+
+    const [showFullTxn, setShowFullTxn] = useState(false);
 
     useEffect(() => {
         loadLedger(1);
@@ -107,6 +111,17 @@ export default function LedgerScreen() {
         } finally {
             setWithdrawing(false);
         }
+    };
+
+    const truncateTxnId = (id: string, start = 6, end = 4) => {
+        if (!id) return '-';
+        if (id.length <= start + end) return id;
+        return `${id.slice(0, start)}…${id.slice(-end)}`;
+    };
+
+    const handleTxnPress = () => {
+        setShowFullTxn(true);
+        setTimeout(() => setShowFullTxn(false), 3000);
     };
 
     const renderItem = ({ item }: { item: LedgerItem }) => {
@@ -195,11 +210,18 @@ export default function LedgerScreen() {
                             <Text style={styles.typeTitle}>
                                 Type: Money added to Ledger Balance
                             </Text>
-
-                            <DetailRow
-                                label="Transaction Id"
-                                value={item.transaction_id || '-'}
-                            />
+                            <TouchableOpacity onPress={handleTxnPress} activeOpacity={0.7}>
+                                <DetailRow
+                                    label="Transaction Id"
+                                    value={
+                                        item.transaction_id
+                                            ? showFullTxn
+                                                ? item.transaction_id
+                                                : truncateTxnId(item.transaction_id)
+                                            : '-'
+                                    }
+                                />
+                            </TouchableOpacity>
                             <DetailRow
                                 label="Reference No"
                                 value={item.tr_reference_no || '-'}
@@ -299,11 +321,19 @@ export default function LedgerScreen() {
                     setWithdrawAmount('');
                     setWithdrawVisible(true);
                 }} />
-                <ActionButton icon="remove-circle-outline" title="Withdraw" onPress={() => {
-                    setActionType('withdraw');
-                    setWithdrawAmount('');
-                    setWithdrawVisible(true);
-                }} />
+
+                <View style={{ opacity: (user?.balance ?? 0) > 0 ? 1 : 0.5 }}>
+                    <ActionButton
+                        icon="remove-circle-outline"
+                        title="Withdraw"
+                        onPress={(user?.balance ?? 0) > 0 ? () => {
+                            setActionType('withdraw');
+                            setWithdrawAmount('');
+                            setWithdrawVisible(true);
+                        } : undefined}
+                    />
+                </View>
+
                 <ActionButton icon="download-outline" title="Statement" />
             </View>
 
@@ -584,7 +614,7 @@ const styles = StyleSheet.create({
     },
 
     section: {
-        marginTop: 10,
+        marginTop: 3,
     },
 
     typeTitle: {
@@ -609,13 +639,13 @@ const styles = StyleSheet.create({
 
     detailLabel: {
         fontSize: 13,
-        color: BrandColors.mutedText,
+        fontWeight: '600',
+        color: BrandColors.text,
     },
 
     detailValue: {
         fontSize: 13,
-        fontWeight: '600',
-        color: BrandColors.text,
+        color: BrandColors.mutedText,
         flexShrink: 1,
         textAlign: 'right',
     },
@@ -635,13 +665,13 @@ const styles = StyleSheet.create({
 
     metaLabel: {
         fontSize: 12,
-        color: BrandColors.mutedText,
+        fontWeight: '600',
+        color: BrandColors.text,
     },
 
     metaValue: {
         fontSize: 12,
-        fontWeight: '600',
-        color: BrandColors.text,
+        color: BrandColors.mutedText,
     },
 
     modalOverlay: {

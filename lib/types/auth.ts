@@ -14,6 +14,7 @@ export interface User {
         name: string;
         url: string;
     }
+    balance?: number;
 }
 
 // Auth request types

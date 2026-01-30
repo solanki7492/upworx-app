@@ -151,7 +151,7 @@ export default function HelpSupportScreen() {
                 </View>
 
                 {/* Send Message */}
-                <View style={styles.section}>
+                {/* <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Send us a Message</Text>
                     <View style={styles.messageCard}>
                         <TextInput
@@ -168,7 +168,7 @@ export default function HelpSupportScreen() {
                             <Text style={styles.sendButtonText}>Send Message</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </View> */}
 
                 {/* Support Hours */}
                 <View style={[styles.section, styles.lastSection]}>
@@ -229,11 +229,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 20,
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     contactIcon: {
         width: 56,
@@ -255,11 +250,6 @@ const styles = StyleSheet.create({
         backgroundColor: BrandColors.card,
         borderRadius: 12,
         padding: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     faqCardExpanded: {
         borderLeftWidth: 3,
@@ -290,11 +280,6 @@ const styles = StyleSheet.create({
         backgroundColor: BrandColors.card,
         borderRadius: 12,
         padding: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     messageInput: {
         fontSize: 16,
@@ -323,11 +308,6 @@ const styles = StyleSheet.create({
         backgroundColor: BrandColors.card,
         borderRadius: 12,
         padding: 20,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     supportHoursText: {
         flex: 1,

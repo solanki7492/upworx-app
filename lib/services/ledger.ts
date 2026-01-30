@@ -40,3 +40,14 @@ export const initAddMoney = async (amount: number): Promise<{ status: boolean; m
         return handleApiError(error);
     }
 }
+
+export const downloadStatement = async (): Promise<{ status: boolean; path: string }> => {
+    try {
+        const response = await apiClient.get<{ status: boolean; path: string }>(
+            '/partner/download-statement',
+        );
+        return response.data;
+    } catch (error) {
+        return handleApiError(error);
+    }
+}

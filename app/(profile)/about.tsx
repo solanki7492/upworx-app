@@ -47,7 +47,7 @@ export default function AboutScreen() {
                     </View>
                     <Text style={styles.appName}>UpWorx</Text>
                     <Text style={styles.tagline}>Your trusted service partner</Text>
-                    <Text style={styles.version}>Version 1.0.0</Text>
+                    <Text style={styles.version}>Version 1.0.1</Text>
                 </View>
 
                 {/* About Content */}
@@ -115,17 +115,17 @@ export default function AboutScreen() {
 
                     <TouchableOpacity style={styles.contactItem} onPress={handleWebsite}>
                         <Ionicons name="globe-outline" size={20} color={BrandColors.text} />
-                        <Text style={styles.contactText}>www.upworx.com</Text>
+                        <Text style={styles.contactText}>www.upworx.in</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.contactItem} onPress={handleEmail}>
                         <Ionicons name="mail-outline" size={20} color={BrandColors.text} />
-                        <Text style={styles.contactText}>info@upworx.com</Text>
+                        <Text style={styles.contactText}>info@upworx.in</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.contactItem}>
                         <Ionicons name="call-outline" size={20} color={BrandColors.text} />
-                        <Text style={styles.contactText}>+91 98765 43210</Text>
+                        <Text style={styles.contactText}>+91 8273737872</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -246,11 +246,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 20,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     aboutTitle: {
         fontSize: 20,
@@ -269,11 +264,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 20,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     sectionTitle: {
         fontSize: 18,
@@ -313,11 +303,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 20,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     contactItem: {
         flexDirection: 'row',
@@ -334,11 +319,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 20,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     socialLinks: {
         flexDirection: 'row',
@@ -358,11 +338,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     legalItem: {
         flexDirection: 'row',

@@ -25,6 +25,7 @@ export default function EarningsScreen() {
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebounce(search, 500);
     const [searchLoading, setSearchLoading] = useState(false);
+    const [totalEarnings, setTotalEarnings] = useState(0);
 
     useEffect(() => {
         setHasMore(true);
@@ -44,6 +45,7 @@ export default function EarningsScreen() {
 
             const res = await getEarnings(pageNo, debouncedSearch);
             const newData = res.data;
+            setTotalEarnings(res.total_earning);
 
             setHasMore(res.meta.current_page < res.meta.last_page);
             setPage(res.meta.current_page);
@@ -65,30 +67,6 @@ export default function EarningsScreen() {
         loadEarnings(1, true);
     };
 
-    const totalEarning = useMemo(() => {
-        let total = 0;
-
-        earnings.forEach((lead) => {
-            const rowEarning =
-                (lead.total_price_after ?? 0)
-                - (lead.deduction ?? 0)
-                - Number(lead.token ?? 0);
-
-            total += rowEarning;
-
-            if (lead.refund_id) {
-                const refundEarning =
-                    (lead.refund_deduction ?? 0)
-                    + (lead.refund_token ?? 0)
-                    - (lead.refund_amount ?? 0);
-
-                total += refundEarning;
-            }
-        });
-
-        return total;
-    }, [earnings]);
-
     if (loading) {
         return (
             <View style={[styles.center, { paddingTop: insets.top }]}>
@@ -107,10 +85,10 @@ export default function EarningsScreen() {
                 <Text
                     style={[
                         styles.totalValue,
-                        { color: totalEarning >= 0 ? BrandColors.success : BrandColors.danger },
+                        { color: totalEarnings >= 0 ? BrandColors.success : BrandColors.danger },
                     ]}
                 >
-                    ₹ {totalEarning.toFixed(2)}
+                    ₹ {totalEarnings.toFixed(2)}
                 </Text>
             </View>
 

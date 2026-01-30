@@ -54,7 +54,9 @@ export default function HomeScreen() {
           }
         } else {
           // Show modal if no city is stored
-          setShowCityModal(true);
+          setTimeout(() => {
+            setShowCityModal(true);
+          }, 100);
         }
       } catch (error) {
         console.error('Error checking stored city:', error);

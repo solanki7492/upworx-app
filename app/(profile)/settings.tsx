@@ -206,7 +206,7 @@ export default function SettingsScreen() {
                 <View style={[styles.section, styles.lastSection]}>
                     <View style={styles.versionCard}>
                         <Text style={styles.versionLabel}>App Version</Text>
-                        <Text style={styles.versionText}>1.0.0</Text>
+                        <Text style={styles.versionText}>1.0.1</Text>
                     </View>
                 </View>
             </ScrollView>

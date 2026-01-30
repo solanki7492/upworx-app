@@ -38,4 +38,5 @@ export interface EarningsResponse {
         last_page: number;
     };
     status: boolean;
+    total_earning: number;
 }

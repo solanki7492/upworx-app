@@ -243,7 +243,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
 
                 {/* App Version */}
-                <Text style={styles.versionText}>Version 1.0.0</Text>
+                <Text style={styles.versionText}>Version 1.0.1</Text>
             </ScrollView>
         </View>
     );
@@ -268,11 +268,6 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 20,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     avatarContainer: {
         alignSelf: 'center',
@@ -370,11 +365,6 @@ const styles = StyleSheet.create({
         backgroundColor: BrandColors.card,
         borderRadius: 12,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
         overflow: 'hidden',
     },
     menuItem: {
@@ -415,11 +405,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 16,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
     },
     logoutText: {
         fontSize: 16,
