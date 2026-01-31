@@ -194,7 +194,7 @@ export default function ProfileScreen() {
                 {/* Menu Items */}
                 <View style={styles.menuSection}>
                     {profileMenuItems.map((item, index) => {
-                        if (item.id === '3' || item.id === '4' || item.id === '5' && user?.role !== 'PARTNER') {
+                        if ((item.id === '3' || item.id === '4' || item.id === '5') && user?.role !== 'PARTNER') {
                             return null;
                         }
                         return (
