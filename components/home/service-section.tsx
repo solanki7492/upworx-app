@@ -25,6 +25,7 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
       await StorageService.setPendingRedirect({
         pathname: '/(booking)',
         params: {
+          id: item.id,
           slug: item.slug,
           serviceName: item.name,
           city: city,
@@ -47,6 +48,7 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
     router.push({
       pathname: '/(booking)',
       params: {
+        id: item.id,
         slug: item.slug,
         serviceName: item.name,
         city: city,

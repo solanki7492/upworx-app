@@ -11,7 +11,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BookingScreen() {
-    const { slug, serviceName, city } = useLocalSearchParams();
+    const { id, slug, serviceName, city } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { addOrder } = useCart();
@@ -100,7 +100,7 @@ export default function BookingScreen() {
         const order = {
             orderId: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             mainService: {
-                id: slug as string,
+                id: id as string,
                 name: serviceName as string,
                 slug: slug as string,
             },
