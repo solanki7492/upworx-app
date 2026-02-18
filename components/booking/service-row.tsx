@@ -6,6 +6,7 @@ type ServiceRowProps = {
     service: {
         name: string;
         price: number;
+        note: string | null;
     };
     selected: boolean;
     onToggle: () => void;
@@ -17,7 +18,9 @@ export function ServiceRow({ service, selected, onToggle }: ServiceRowProps) {
             <View style={styles.content}>
                 <Text style={styles.name}>{service.name}</Text>
                 <Text style={styles.price}>
-                ₹ {(service.price ?? 0).toLocaleString()}
+                {service.price > 0
+                    ? `₹ ${service.price.toLocaleString()}`
+                    : `₹ ${service.note ?? 'Contact for price'}`}
                 </Text>
             </View>
 

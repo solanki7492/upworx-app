@@ -65,5 +65,6 @@ export interface GetServicesPriceResponse {
         id: number;
         name: string;
         price: number;
+        note: string | null;
     }[];
 }

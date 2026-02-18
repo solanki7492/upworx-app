@@ -217,6 +217,7 @@ export default function BookingScreen() {
                                     const normalizedService = {
                                         ...s,
                                         price: Number(s.price) || 0,
+                                        note: Number(s.price) > 0 ? null : s.note,
                                     };
                                     const selectedService = selectedServices.find(ss => ss.id === normalizedService.id);
 

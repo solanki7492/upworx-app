@@ -29,6 +29,14 @@ export default function AboutScreen() {
         }
     };
 
+    const handlePrivacyPolicy = () => {
+        Linking.openURL('https://upworx.in/privacy-policy');
+    };
+
+    const handleTermsOfService = () => {
+        Linking.openURL('https://upworx.in/terms-conditions');
+    }
+
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
@@ -165,20 +173,20 @@ export default function AboutScreen() {
 
                 {/* Legal */}
                 <View style={styles.legalCard}>
-                    <TouchableOpacity style={styles.legalItem}>
+                    <TouchableOpacity style={styles.legalItem} onPress={handlePrivacyPolicy}>
                         <Text style={styles.legalText}>Privacy Policy</Text>
                         <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.legalItem}>
+                    <TouchableOpacity style={styles.legalItem} onPress={handleTermsOfService}>
                         <Text style={styles.legalText}>Terms of Service</Text>
                         <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.legalItem, styles.lastLegalItem]}>
+                    {/* <TouchableOpacity style={[styles.legalItem, styles.lastLegalItem]}>
                         <Text style={styles.legalText}>Licenses</Text>
                         <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
 
                 {/* Copyright */}

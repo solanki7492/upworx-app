@@ -88,7 +88,7 @@ export default function EarningsScreen() {
                         { color: totalEarnings >= 0 ? BrandColors.success : BrandColors.danger },
                     ]}
                 >
-                    ₹ {totalEarnings.toFixed(2)}
+                    ₹ { totalEarnings ? totalEarnings.toFixed(2) : '0.00' }
                 </Text>
             </View>
 

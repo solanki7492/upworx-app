@@ -18,14 +18,14 @@ const CITIES = ['Bareilly', 'Kanpur', 'Moradabad'];
 
 const applianceServices = [
   { id: 1, name: 'AC Repair', icon_image: require('@/assets/images/services/ac-repair.png'), slug: 'ac' },
-  { id: 2, name: 'Washing Machine', icon_image: require('@/assets/images/services/washing-machine.webp'), slug: 'washing-machine' },
-  { id: 3, name: 'Refrigerator', icon_image: require('@/assets/images/services/refrigerator.webp'), slug: 'refrigerator' },
+  { id: 16, name: 'Washing Machine', icon_image: require('@/assets/images/services/washing-machine.webp'), slug: 'washing-machine' },
+  { id: 10, name: 'Refrigerator', icon_image: require('@/assets/images/services/refrigerator.webp'), slug: 'refrigerator' },
 ];
 
 const homeCareServices = [
-  { id: 1, name: 'Plumbing', icon_image: require('@/assets/images/services/plumbing.webp'), slug: 'plumber' },
-  { id: 2, name: 'Electrician', icon_image: require('@/assets/images/services/electrical.webp'), slug: 'electrician' },
-  { id: 3, name: 'Carpenter', icon_image: require('@/assets/images/services/carpentry.webp'), slug: 'carpenter' },
+  { id: 34, name: 'Plumbing', icon_image: require('@/assets/images/services/plumbing.webp'), slug: 'plumber' },
+  { id: 37, name: 'Electrician', icon_image: require('@/assets/images/services/electrical.webp'), slug: 'electrician' },
+  { id: 40, name: 'Carpenter', icon_image: require('@/assets/images/services/carpentry.webp'), slug: 'carpenter' },
 ];
 
 export default function HomeScreen() {
