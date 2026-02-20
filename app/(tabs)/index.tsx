@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { StorageService } from '@/lib';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,7 +34,6 @@ export default function HomeScreen() {
   const [selectedCity, setSelectedCity] = useState('Bareilly');
   const [open, setOpen] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
-  const userRole = user?.role || 'CUSTOMER';
 
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const { setCity } = useApp();
@@ -96,11 +95,6 @@ export default function HomeScreen() {
       .slice(0, 2)
       .join('');
   };
-
-  if (userRole === 'PARTNER') {
-    return <Redirect href="/(tabs)/leads" />;
-  }
-
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>

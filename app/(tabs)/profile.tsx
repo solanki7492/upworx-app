@@ -22,42 +22,24 @@ const profileMenuItems = [
     },
     {
         id: '3',
-        title: 'My Services',
-        icon: 'briefcase-outline',
-        route: '/(profile)/services',
-    },
-    {
-        id: '4',
-        title: 'Availability',
-        icon: 'calendar-outline',
-        route: '/(profile)/availability',
-    },
-    {
-        id: '5',
-        title: 'My Banking Details',
-        icon: 'wallet-outline',
-        route: '/(profile)/banking',
-    },
-    {
-        id: '6',
         title: 'Notifications',
         icon: 'notifications-outline',
         route: '/(profile)/notifications',
     },
     {
-        id: '7',
+        id: '4',
         title: 'Help & Support',
         icon: 'help-circle-outline',
         route: '/(profile)/help-support',
     },
     {
-        id: '8',
+        id: '5',
         title: 'Settings',
         icon: 'settings-outline',
         route: '/(profile)/settings',
     },
     {
-        id: '9',
+        id: '6',
         title: 'About',
         icon: 'information-circle-outline',
         route: '/(profile)/about',
@@ -193,36 +175,25 @@ export default function ProfileScreen() {
 
                 {/* Menu Items */}
                 <View style={styles.menuSection}>
-                    {profileMenuItems.map((item, index) => {
-                        if ((item.id === '3' || item.id === '4' || item.id === '5') && user?.role !== 'PARTNER') {
-                            return null;
-                        }
-                        return (
-                            <TouchableOpacity
-                                key={item.id}
-                                style={[
-                                    styles.menuItem,
-                                    index === profileMenuItems.length - 1 && styles.lastMenuItem,
-                                ]}
-                                activeOpacity={0.7}
-                                onPress={() =>
-                                    router.push(
-                                        user?.role === 'PARTNER' && item.id === '1'
-                                            ? '/(profile)/partner-edit-profile'
-                                            : (item.route as any)
-                                    )
-                                }
-                            >
-                                <View style={styles.menuItemLeft}>
-                                    <View style={styles.menuIconContainer}>
-                                        <Ionicons name={item.icon as any} size={22} color={BrandColors.primary} />
-                                    </View>
-                                    <Text style={styles.menuItemText}>{item.title}</Text>
+                    {profileMenuItems.map((item, index) => (
+                        <TouchableOpacity
+                            key={item.id}
+                            style={[
+                                styles.menuItem,
+                                index === profileMenuItems.length - 1 && styles.lastMenuItem,
+                            ]}
+                            activeOpacity={0.7}
+                            onPress={() => router.push(item.route as any)}
+                        >
+                            <View style={styles.menuItemLeft}>
+                                <View style={styles.menuIconContainer}>
+                                    <Ionicons name={item.icon as any} size={22} color={BrandColors.primary} />
                                 </View>
-                                <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
-                            </TouchableOpacity>
-                        )
-                    })}
+                                <Text style={styles.menuItemText}>{item.title}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
+                        </TouchableOpacity>
+                    ))}
                 </View>
 
                 {/* Logout Button */}
