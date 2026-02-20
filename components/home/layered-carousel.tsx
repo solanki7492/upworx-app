@@ -99,6 +99,7 @@ export function OfferStack({ onChange }: OfferStackProps) {
                             router.push({
                                 pathname: '/(booking)',
                                 params: {
+                                    id: current.id,
                                     slug: current.slug,
                                     serviceName: current.title,
                                     city: city,

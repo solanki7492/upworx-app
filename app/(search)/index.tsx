@@ -61,6 +61,7 @@ export default function SearchScreen() {
         router.push({
             pathname: '/(booking)',
             params: {
+                id: service.id,
                 slug: service.slug,
                 serviceName: service.name,
                 city: city || 'bareilly',
