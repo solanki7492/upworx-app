@@ -142,7 +142,7 @@ export default function SettingsScreen() {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Privacy & Security</Text>
                     <View style={styles.settingsCard}>
-                        <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+                        {/* <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
                             <View style={styles.settingInfo}>
                                 <Ionicons name="shield-checkmark-outline" size={20} color={BrandColors.text} />
                                 <Text style={styles.settingText}>Privacy Policy</Text>
@@ -156,7 +156,7 @@ export default function SettingsScreen() {
                                 <Text style={styles.settingText}>Terms of Service</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
 
                         <TouchableOpacity style={[styles.settingItem, styles.lastSettingItem]} activeOpacity={0.7} onPress={() => router.push('/(profile)/change-password')}>
                             <View style={styles.settingInfo}>
@@ -169,7 +169,7 @@ export default function SettingsScreen() {
                 </View>
 
                 {/* Data Management */}
-                <View style={styles.section}>
+                {/* <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Data Management</Text>
                     <View style={styles.settingsCard}>
                         <TouchableOpacity style={styles.settingItem} activeOpacity={0.7} onPress={handleClearCache}>
@@ -200,7 +200,7 @@ export default function SettingsScreen() {
                             <Ionicons name="chevron-forward" size={20} color={BrandColors.mutedText} />
                         </TouchableOpacity>
                     </View>
-                </View>
+                </View> */}
 
                 {/* App Version */}
                 <View style={[styles.section, styles.lastSection]}>

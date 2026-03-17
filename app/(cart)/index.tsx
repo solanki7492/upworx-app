@@ -1,3 +1,4 @@
+import AddressFormModal from '@/components/address-form-modal';
 import OrderStatusOverlay from '@/components/ui/order-status-overlay';
 import { useCart } from '@/contexts/cart-context';
 import { getAddresses } from '@/lib/services/address';
@@ -66,6 +67,7 @@ export default function CartScreen() {
     const [addresses, setAddresses] = useState<any[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
     const [showAddressList, setShowAddressList] = useState(false);
+    const [showAddAddressModal, setShowAddAddressModal] = useState(false);
 
     // Order expansion state
     const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
@@ -397,17 +399,32 @@ export default function CartScreen() {
         }
     };
 
+    const loadAddresses = async () => {
+        const data = await getAddresses();
+        setAddresses(data);
+
+        const defaultAddr = data.find(a => a.default_address === 1);
+        setSelectedAddress(defaultAddr || data[0]);
+    };
+
     useEffect(() => {
-        const loadAddresses = async () => {
-            const data = await getAddresses();
-            setAddresses(data);
-
-            const defaultAddr = data.find(a => a.default_address === 1);
-            setSelectedAddress(defaultAddr || data[0]);
-        };
-
         loadAddresses();
     }, []);
+
+    const handleAddressSuccess = async (newAddress: any) => {
+        // Reload addresses
+        const data = await getAddresses();
+        setAddresses(data);
+
+        // Select the newly added address from the reloaded list
+        if (newAddress && newAddress.id) {
+            const matched = data.find((a: any) => a.id === newAddress.id);
+            setSelectedAddress(matched || data[data.length - 1] || null);
+        } else {
+            // Fallback: select the last added address
+            setSelectedAddress(data[data.length - 1] || null);
+        }
+    };
 
 
     return (
@@ -709,7 +726,7 @@ export default function CartScreen() {
                                 activeOpacity={0.85}
                                 onPress={() => {
                                     setShowAddressList(false);
-                                    router.push('/(profile)/addresses');
+                                    setShowAddAddressModal(true);
                                 }}
                             >
                                 <Ionicons name="add-circle-outline" size={28} color={BrandColors.primary} />
@@ -719,7 +736,7 @@ export default function CartScreen() {
                                 </Text>
                             </TouchableOpacity>
                         ) : (
-                            <ScrollView>
+                            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 350 }}>
                                 {addresses.map(addr => (
                                     <TouchableOpacity
                                         key={addr.id}
@@ -753,6 +770,19 @@ export default function CartScreen() {
                                         </View>
                                     </TouchableOpacity>
                                 ))}
+
+                                {/* Add New Address Button */}
+                                <TouchableOpacity
+                                    style={styles.addAddressButton}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        setShowAddressList(false);
+                                        setShowAddAddressModal(true);
+                                    }}
+                                >
+                                    <Ionicons name="add-circle" size={20} color={BrandColors.primary} />
+                                    <Text style={styles.addAddressButtonText}>Add New Address</Text>
+                                </TouchableOpacity>
                             </ScrollView>
                         )}
 
@@ -900,6 +930,14 @@ export default function CartScreen() {
             )}
 
             <OrderStatusOverlay status={orderStatus} orderId={confirmedOrderId ?? undefined} />
+
+            {/* Add Address Modal */}
+            <AddressFormModal
+                visible={showAddAddressModal}
+                onClose={() => setShowAddAddressModal(false)}
+                onSuccess={handleAddressSuccess}
+                userRole="CUSTOMER"
+            />
 
         </View>
     );
@@ -1428,5 +1466,23 @@ const styles = StyleSheet.create({
     selectionCardSubtitle: {
         fontSize: 13,
         color: BrandColors.mutedText,
+    },
+    addAddressButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#F0F9FF',
+        padding: 16,
+        borderRadius: 12,
+        marginTop: 12,
+        borderWidth: 1.5,
+        borderColor: BrandColors.primary,
+        borderStyle: 'dashed',
+    },
+    addAddressButtonText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: BrandColors.primary,
     },
 });

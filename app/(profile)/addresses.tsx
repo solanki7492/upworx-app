@@ -1,6 +1,7 @@
+import AddressFormModal from '@/components/address-form-modal';
 import { useAuth } from '@/contexts/auth-context';
-import { createAddress, deleteAddress, getAddresses, updateAddress } from '@/lib';
-import { Address, CreateAddressRequest } from '@/lib/types/address';
+import { deleteAddress, getAddresses } from '@/lib';
+import { Address } from '@/lib/types/address';
 import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,19 +9,14 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Modal,
     RefreshControl,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
-    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-type AddressType = 'home' | 'work' | 'other';
 
 export default function AddressesScreen() {
     const insets = useSafeAreaInsets();
@@ -30,28 +26,7 @@ export default function AddressesScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-    const [submitting, setSubmitting] = useState(false);
-    const [addressQuery, setAddressQuery] = useState('');
-    const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
     const { user } = useAuth();
-
-    // Form state
-    const [formData, setFormData] = useState({
-        name: '',
-        mobile_number: '',
-        pincode: '',
-        address_line_1: '',
-        address_line_2: '',
-        city: '',
-        state: '',
-        default_address: 0,
-        address_type: 'home' as AddressType,
-        range_area: '',
-        latitude: '',
-        longitude: '',
-    });
-    const [pincodeLoading, setPincodeLoading] = useState(false);
 
     useEffect(() => {
         fetchAddresses();
@@ -75,290 +50,18 @@ export default function AddressesScreen() {
         setRefreshing(false);
     }, []);
 
-    const validatePincode = async (pincode: string) => {
-        if (pincode.length !== 6) return;
-
-        try {
-            setPincodeLoading(true);
-            // Using Google Geocoding API
-            const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?components=country:IN|postal_code:${pincode}&key=AIzaSyAt2K0xeZNSSH7zRdJ4YmkrOJcXMPV2Hlk`
-            );
-            const data = await response.json();
-
-            if (data.results && data.results.length > 0) {
-                const result = data.results[0];
-                const location = result.geometry.location;
-                let city = '';
-                let state = '';
-
-                // Extract city and state from address components
-                result.address_components.forEach((component: any) => {
-                    if (component.types.includes('locality')) {
-                        city = component.long_name;
-                    }
-                    if (component.types.includes('administrative_area_level_1')) {
-                        state = component.long_name;
-                    }
-                });
-
-                setFormData((prev) => ({
-                    ...prev,
-                    city,
-                    state,
-                    latitude: location.lat.toString(),
-                    longitude: location.lng.toString(),
-                }));
-            } else {
-                Alert.alert('Invalid Pincode', 'Please enter a valid Indian pincode');
-                setFormData((prev) => ({
-                    ...prev,
-                    city: '',
-                    state: '',
-                    latitude: '',
-                    longitude: '',
-                }));
-            }
-        } catch (error) {
-            // For now, use mock data for demonstration
-            // In production, replace with actual Google API key
-            const mockGeoData: { [key: string]: any } = {
-                '243122': {
-                    city: 'Bareilly Division',
-                    state: 'Uttar Pradesh',
-                    lat: 28.3670355,
-                    lng: 79.4304381,
-                },
-                '110001': {
-                    city: 'New Delhi',
-                    state: 'Delhi',
-                    lat: 28.6139,
-                    lng: 77.209,
-                },
-            };
-
-            if (mockGeoData[pincode]) {
-                setFormData((prev) => ({
-                    ...prev,
-                    city: mockGeoData[pincode].city,
-                    state: mockGeoData[pincode].state,
-                    latitude: mockGeoData[pincode].lat.toString(),
-                    longitude: mockGeoData[pincode].lng.toString(),
-                }));
-            } else {
-                Alert.alert('Invalid Pincode', 'Please enter a valid Indian pincode');
-            }
-        } finally {
-            setPincodeLoading(false);
-        }
-    };
-
-    const handlePincodeChange = (text: string) => {
-        const numericText = text.replace(/[^0-9]/g, '');
-        setFormData((prev) => ({ ...prev, pincode: numericText }));
-
-        if (numericText.length === 6) {
-            validatePincode(numericText);
-        } else {
-            setFormData((prev) => ({
-                ...prev,
-                city: '',
-                state: '',
-                latitude: '',
-                longitude: '',
-            }));
-        }
-    };
-
-    const handleAddressChange = async (text: string) => {
-        setAddressQuery(text);
-        setFormData(prev => ({ ...prev, address_line_2: text }));
-
-        if (text.length < 3) {
-            setSuggestions([]);
-            setShowSuggestions(false);
-            return;
-        }
-
-        const res = await fetch(
-            `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${text}&components=country:in&key=AIzaSyAt2K0xeZNSSH7zRdJ4YmkrOJcXMPV2Hlk`
-        );
-
-        const json = await res.json();
-
-        if (json.predictions) {
-            setSuggestions(json.predictions);
-            setShowSuggestions(true);
-        }
-    };
-
-    const selectAddress = async (item: any) => {
-        setAddressQuery(item.description);
-        setShowSuggestions(false);
-
-        const res = await fetch(
-            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${item.place_id}&key=AIzaSyAt2K0xeZNSSH7zRdJ4YmkrOJcXMPV2Hlk`
-        );
-
-        const json = await res.json();
-        const result = json.result;
-
-        let city = '';
-        let state = '';
-
-        const excludedTypes = [
-            'administrative_area_level_1', // state
-            'country',
-            'postal_code',
-        ];
-
-        const addressLine2 = result.address_components
-            .filter(
-                (component: any) =>
-                    !component.types.some((type: string) =>
-                        excludedTypes.includes(type)
-                    )
-            )
-            .map((component: any) => component.long_name)
-            .join(', ');
-
-        result.address_components.forEach((component: any) => {
-            if (component.types.includes('locality')) {
-                city = component.long_name;
-            }
-
-            if (component.types.includes('administrative_area_level_1')) {
-                state = component.long_name;
-            }
-        });
-
-        setAddressQuery(addressLine2);
-
-        setFormData(prev => ({
-            ...prev,
-            address_line_2: addressLine2,
-            city,
-            state,
-            latitude: result.geometry.location.lat.toString(),
-            longitude: result.geometry.location.lng.toString(),
-        }));
-    };
-
     const openAddModal = () => {
         setEditingAddress(null);
-        setFormData({
-            name: '',
-            mobile_number: '',
-            pincode: '',
-            address_line_1: '',
-            address_line_2: '',
-            city: '',
-            state: '',
-            default_address: 0,
-            address_type: 'home',
-            range_area: '',
-            latitude: '',
-            longitude: '',
-        });
         setModalVisible(true);
     };
 
     const openEditModal = (address: Address) => {
         setEditingAddress(address);
-        setFormData({
-            name: address.name,
-            mobile_number: address.mobile_number,
-            pincode: address.pincode,
-            address_line_1: address.address_line_1,
-            address_line_2: address.address_line_2,
-            city: address.city,
-            state: address.state,
-            default_address: address.default_address ?? 0,
-            address_type: address.address_type,
-            range_area: address.range_area != null ? address.range_area.toString() : '',
-            latitude: address.latitude.toString(),
-            longitude: address.longitude.toString(),
-        });
         setModalVisible(true);
     };
 
-    const buildPayload = () => {
-        const basePayload = {
-            name: formData.name,
-            mobile_number: formData.mobile_number,
-            pincode: formData.pincode,
-            address_line_1: formData.address_line_1,
-            address_line_2: formData.address_line_2,
-            city: formData.city,
-            state: formData.state,
-            latitude: formData.latitude,
-            longitude: formData.longitude,
-            address_type: formData.address_type,
-        };
-
-        if (user?.role === 'CUSTOMER') {
-            return {
-                ...basePayload,
-                default_address: formData.default_address,
-            };
-        }
-
-        if (user?.role === 'PARTNER') {
-            return {
-                ...basePayload,
-                range_area: formData.range_area,
-            };
-        }
-
-        return basePayload;
-    };
-
-    const handleSubmit = async () => {
-        // Validation
-        if (!formData.name.trim()) {
-            Alert.alert('Validation Error', 'Please enter your name');
-            return;
-        }
-        if (!formData.mobile_number.trim() || formData.mobile_number.length !== 10) {
-            Alert.alert('Validation Error', 'Please enter a valid 10-digit mobile number');
-            return;
-        }
-        if (!formData.pincode.trim() || formData.pincode.length !== 6) {
-            Alert.alert('Validation Error', 'Please enter a valid 6-digit pincode');
-            return;
-        }
-        if (!formData.address_line_2.trim()) {
-            Alert.alert('Validation Error', 'Please enter Road name/Area/Colony');
-            return;
-        }
-        if (!formData.city || !formData.state) {
-            Alert.alert('Validation Error', 'Invalid pincode. City and State could not be determined');
-            return;
-        }
-
-        try {
-            setSubmitting(true);
-            const payload = buildPayload();
-
-            const requestData: CreateAddressRequest = {
-                ...payload,
-            };
-
-            if (editingAddress) {
-                await updateAddress(editingAddress.id, requestData);
-                Alert.alert('Success', 'Address updated successfully');
-            } else {
-                await createAddress(requestData);
-                Alert.alert('Success', 'Address added successfully');
-            }
-
-            setModalVisible(false);
-            fetchAddresses();
-        } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to save address');
-        } finally {
-            setSubmitting(false);
-        }
+    const handleAddressSuccess = async () => {
+        await fetchAddresses();
     };
 
     const handleDelete = (address: Address) => {
@@ -380,7 +83,7 @@ export default function AddressesScreen() {
         ]);
     };
 
-    const getAddressTypeIcon = (type: AddressType) => {
+    const getAddressTypeIcon = (type: 'home' | 'work' | 'other') => {
         switch (type) {
             case 'home':
                 return 'home';
@@ -468,208 +171,13 @@ export default function AddressesScreen() {
             )}
 
             {/* Add/Edit Address Modal */}
-            <Modal
+            <AddressFormModal
                 visible={modalVisible}
-                animationType="slide"
-                transparent={false}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-                    <View style={styles.modalHeader}>
-                        <TouchableOpacity onPress={() => setModalVisible(false)}>
-                            <Ionicons name="close" size={24} color={BrandColors.text} />
-                        </TouchableOpacity>
-                        <Text style={styles.modalTitle}>{editingAddress ? 'Edit Address' : 'Add Address'}</Text>
-                        <View style={{ width: 24 }} />
-                    </View>
-
-                    <ScrollView showsVerticalScrollIndicator={false} style={styles.modalContent}>
-                        {/* Name */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Full Name *</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={formData.name}
-                                onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
-                                placeholder="Enter your full name"
-                                placeholderTextColor={BrandColors.mutedText}
-                            />
-                        </View>
-
-                        {/* Mobile Number */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Mobile Number *</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={formData.mobile_number}
-                                onChangeText={(text) =>
-                                    setFormData((prev) => ({ ...prev, mobile_number: text.replace(/[^0-9]/g, '') }))
-                                }
-                                placeholder="Enter 10-digit mobile number"
-                                placeholderTextColor={BrandColors.mutedText}
-                                keyboardType="phone-pad"
-                                maxLength={10}
-                            />
-                        </View>
-
-                        {/* Pincode */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Pincode *</Text>
-                            <View style={styles.pincodeContainer}>
-                                <TextInput
-                                    style={[styles.input, { flex: 1 }]}
-                                    value={formData.pincode}
-                                    onChangeText={handlePincodeChange}
-                                    placeholder="Enter 6-digit pincode"
-                                    placeholderTextColor={BrandColors.mutedText}
-                                    keyboardType="number-pad"
-                                    maxLength={6}
-                                />
-                                {pincodeLoading && <ActivityIndicator size="small" color={BrandColors.primary} />}
-                            </View>
-                        </View>
-
-                        {/* Address Line 1 */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Flat, House no.</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={formData.address_line_1}
-                                onChangeText={(text) => setFormData((prev) => ({ ...prev, address_line_1: text }))}
-                                placeholder="House No., Building Name"
-                                placeholderTextColor={BrandColors.mutedText}
-                            />
-                        </View>
-
-                        {/* Address Line 2 */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Road name, Area, Colony *</Text>
-
-                            <TextInput
-                                style={styles.input}
-                                value={addressQuery}
-                                onChangeText={handleAddressChange}
-                                placeholder="Road Name, Area, Colony"
-                                placeholderTextColor={BrandColors.mutedText}
-                            />
-
-                            {showSuggestions && (
-                                <View style={styles.suggestionsBox}>
-                                    {suggestions.map((item) => (
-                                        <TouchableOpacity
-                                            key={item.place_id}
-                                            style={styles.suggestionItem}
-                                            onPress={() => selectAddress(item)}
-                                        >
-                                            <Text style={styles.suggestionText}>{item.description}</Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            )}
-                        </View>
-
-                        {/* City (auto-filled) */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>City/District/Town</Text>
-                            <TextInput
-                                style={[styles.input, styles.disabledInput]}
-                                value={formData.city}
-                                editable={false}
-                                placeholder="Auto-filled from pincode"
-                                placeholderTextColor={BrandColors.mutedText}
-                            />
-                        </View>
-
-                        {/* State (auto-filled) */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>State</Text>
-                            <TextInput
-                                style={[styles.input, styles.disabledInput]}
-                                value={formData.state}
-                                editable={false}
-                                placeholder="Auto-filled from pincode"
-                                placeholderTextColor={BrandColors.mutedText}
-                            />
-                        </View>
-                        {/* Set Default Address */}
-                        {user?.role === 'CUSTOMER' ? (
-                            <>
-                                <View style={styles.switchInputContainer}>
-                                    <Text style={styles.inputLabel}>Set as Default Address</Text>
-                                    <Switch
-                                        value={formData.default_address === 1}
-                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, default_address: value ? 1 : 0 }))}
-                                        trackColor={{ false: BrandColors.border, true: BrandColors.primary }}
-                                    />
-                                </View>
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.inputLabel}>Address Type</Text>
-                                    <View style={styles.addressTypeButtons}>
-                                        {(['home', 'work', 'other'] as AddressType[]).map((type) => (
-                                            <TouchableOpacity
-                                                key={type}
-                                                style={[
-                                                    styles.typeButton,
-                                                    formData.address_type === type && styles.typeButtonActive,
-                                                ]}
-                                                onPress={() => setFormData((prev) => ({ ...prev, address_type: type }))}
-                                            >
-                                                <Ionicons
-                                                    name={getAddressTypeIcon(type) as any}
-                                                    size={18}
-                                                    color={
-                                                        formData.address_type === type ? BrandColors.card : BrandColors.primary
-                                                    }
-                                                />
-                                                <Text
-                                                    style={[
-                                                        styles.typeButtonText,
-                                                        formData.address_type === type && styles.typeButtonTextActive,
-                                                    ]}
-                                                >
-                                                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                </View>
-                            </>
-                        ) : (
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.inputLabel}>Service Range Area (in km) *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={formData.range_area}
-                                    onChangeText={(text) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            range_area: text.replace(/[^0-9]/g, ''),
-                                        }))
-                                    }
-                                    placeholder="Enter service range area"
-                                    placeholderTextColor={BrandColors.mutedText}
-                                    keyboardType="number-pad"
-                                />
-                            </View>
-                        )}
-
-                        <TouchableOpacity
-                            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-                            onPress={handleSubmit}
-                            disabled={submitting}
-                        >
-                            {submitting ? (
-                                <ActivityIndicator color={BrandColors.card} />
-                            ) : (
-                                <Text style={styles.submitButtonText}>
-                                    {editingAddress ? 'Update Address' : 'Add Address'}
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                    </ScrollView>
-                </View>
-            </Modal>
+                onClose={() => setModalVisible(false)}
+                onSuccess={handleAddressSuccess}
+                editingAddress={editingAddress}
+                userRole={user?.role as 'CUSTOMER' | 'PARTNER'}
+            />
         </View>
     );
 }

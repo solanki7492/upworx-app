@@ -37,6 +37,7 @@ export default function OtpScreen() {
             const response = await verifyOtp({
                 otp: otpCode,
                 mobile: mobile as string,
+                type: 1,
             });
 
             if (response.status) {

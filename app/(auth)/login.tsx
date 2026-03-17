@@ -80,7 +80,7 @@ export default function Login() {
                     <Ionicons name="arrow-back" size={24} color={BrandColors.primary} />
                 </TouchableOpacity>
                 <Text style={styles.heading}>
-                    Customer Login
+                    Login
                 </Text>
             </View>
             <View style={styles.content}>

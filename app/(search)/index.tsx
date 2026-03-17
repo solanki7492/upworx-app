@@ -6,8 +6,9 @@ import { BrandColors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function SearchScreen() {
     const insets = useSafeAreaInsets();
@@ -19,6 +20,7 @@ export default function SearchScreen() {
     const [filteredServices, setFilteredServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
     const [searching, setSearching] = useState(false);
+    const { isAuthenticated } = useAuth();
 
     useEffect(() => {
         loadServices();
@@ -58,6 +60,18 @@ export default function SearchScreen() {
     }, [allServices]);
 
     const handleServicePress = (service: Service) => {
+        if (!isAuthenticated) {
+            Alert.alert(
+                'Login Required',
+                'Please login to continue.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Login', onPress: () => router.push('/(auth)/login') },
+                ],
+                { cancelable: true }
+            );
+            return;
+        }
         router.push({
             pathname: '/(booking)',
             params: {
