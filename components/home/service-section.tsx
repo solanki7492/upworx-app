@@ -4,17 +4,41 @@ import { StorageService } from '@/lib/utils/storage';
 import { BrandColors } from '@/theme/colors';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, Dimensions, FlatList, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-type Item = { id: number; icon_image: ImageSourcePropType | string; name: string; slug: string };
+type Item = {
+  id: number;
+  icon_image: ImageSourcePropType | string;
+  name: string;
+  slug: string;
+};
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const NUM_COLUMNS = 3;
 const GAP = 12;
 const HORIZONTAL_PADDING = 16 * 2;
-const CARD_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
+const CARD_WIDTH =
+  (SCREEN_WIDTH - HORIZONTAL_PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
-export function ServiceSection({ title, data, onViewMore }: { title: string; data: Item[]; onViewMore?: () => void }) {
+export function ServiceSection({
+  title,
+  data,
+  onViewMore,
+}: {
+  title: string;
+  data: Item[];
+  onViewMore?: () => void;
+}) {
   const router = useRouter();
   const { city } = useApp();
   const { isAuthenticated } = useAuth();
@@ -23,7 +47,7 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
     if (!isAuthenticated) {
       // Store the service details for redirect after login
       await StorageService.setPendingRedirect({
-        pathname: '/(booking)',
+        pathname: '/(service-details)',
         params: {
           id: item.id,
           slug: item.slug,
@@ -44,9 +68,9 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
       return;
     }
 
-    // User is authenticated, navigate directly
+    // User is authenticated, navigate to service details page
     router.push({
-      pathname: '/(booking)',
+      pathname: '/(service-details)',
       params: {
         id: item.id,
         slug: item.slug,
@@ -79,7 +103,11 @@ export function ServiceSection({ title, data, onViewMore }: { title: string; dat
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => checkAuthAndRedirect(item)}
-              style={[styles.serviceCard, { width: CARD_WIDTH }, !isLastColumn && { marginRight: GAP }]}
+              style={[
+                styles.serviceCard,
+                { width: CARD_WIDTH },
+                !isLastColumn && { marginRight: GAP },
+              ]}
             >
               <View style={styles.imageWrapper}>
                 <Image

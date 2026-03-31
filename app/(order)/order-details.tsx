@@ -87,7 +87,7 @@ export default function OrderDetailsScreen() {
                 setError('Order not found');
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to load order details');
+            setError(err.message || 'Failed to load booking details');
         } finally {
             setLoading(false);
         }
@@ -246,7 +246,7 @@ export default function OrderDetailsScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Order Details</Text>
+                    <Text style={styles.headerTitle}>Booking Details</Text>
                     <View style={{ width: 24 }} />
                 </View>
                 <View style={styles.centerContainer}>
@@ -263,7 +263,7 @@ export default function OrderDetailsScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Order Details</Text>
+                    <Text style={styles.headerTitle}>Booking Details</Text>
                     <View style={{ width: 24 }} />
                 </View>
                 <View style={styles.centerContainer}>
@@ -284,7 +284,7 @@ export default function OrderDetailsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Order Details</Text>
+                <Text style={styles.headerTitle}>Booking Details</Text>
                 <View style={{ width: 24 }} />
             </View>
 

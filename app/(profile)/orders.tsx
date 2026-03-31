@@ -155,7 +155,7 @@ export default function MyOrdersScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <Text style={styles.headerTitle}>My Bookings</Text>
                 </View>
                 <View style={styles.notLoggedInContainer}>
                     <Ionicons name="person-outline" size={64} color={BrandColors.mutedText} />
@@ -178,7 +178,7 @@ export default function MyOrdersScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <Text style={styles.headerTitle}>My Bookings</Text>
                 </View>
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={BrandColors.primary} />
@@ -194,7 +194,7 @@ export default function MyOrdersScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <Text style={styles.headerTitle}>My Bookings</Text>
                 </View>
                 <View style={styles.centerContainer}>
                     <Ionicons name="alert-circle-outline" size={64} color={BrandColors.danger} />
@@ -214,11 +214,11 @@ export default function MyOrdersScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <Text style={styles.headerTitle}>My Bookings</Text>
                 </View>
                 <View style={styles.centerContainer}>
                     <Ionicons name="receipt-outline" size={64} color={BrandColors.mutedText} />
-                    <Text style={styles.emptyText}>No orders yet</Text>
+                    <Text style={styles.emptyText}>No bookings yet</Text>
                     <Text style={styles.emptySubText}>Your booked services will appear here</Text>
                 </View>
             </View>
@@ -231,7 +231,7 @@ export default function MyOrdersScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Orders</Text>
+                <Text style={styles.headerTitle}>My Bookings</Text>
             </View>
 
             <ScrollView
@@ -273,7 +273,7 @@ export default function MyOrdersScreen() {
                             <View style={styles.orderHeader}>
                                 <View style={styles.orderHeaderLeft}>
                                     <Text style={styles.serviceName}>{order.cart.name}</Text>
-                                    <Text style={styles.orderId}>Order #{order.order.order_id}</Text>
+                                    <Text style={styles.orderId}>Booking #{order.order.order_id}</Text>
                                 </View>
                                 <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.order_status.slug)}20` }]}>
                                     <Text style={[styles.statusText, { color: getStatusColor(order.order_status.slug) }]}>
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     orderId: {
-        fontSize: 13,
+        fontSize: 12,
         color: BrandColors.mutedText,
     },
     statusBadge: {

@@ -172,7 +172,7 @@ export default function OrdersScreen() {
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <Text style={styles.headerTitle}>My Bookings</Text>
                 </View>
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={BrandColors.primary} />
@@ -185,7 +185,7 @@ export default function OrdersScreen() {
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <Text style={styles.headerTitle}>My Bookings</Text>
                 </View>
                 <View style={styles.centerContainer}>
                     <Ionicons name="alert-circle-outline" size={64} color={BrandColors.danger} />
@@ -202,11 +202,11 @@ export default function OrdersScreen() {
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <Text style={styles.headerTitle}>My Bookings</Text>
                 </View>
                 <View style={styles.centerContainer}>
                     <Ionicons name="receipt-outline" size={64} color={BrandColors.mutedText} />
-                    <Text style={styles.emptyText}>No orders yet</Text>
+                    <Text style={styles.emptyText}>No bookings yet</Text>
                     <Text style={styles.emptySubText}>Your booked services will appear here</Text>
                 </View>
             </View>
@@ -216,7 +216,7 @@ export default function OrdersScreen() {
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>My Orders</Text>
+                <Text style={styles.headerTitle}>My Bookings</Text>
             </View>
 
             <ScrollView
@@ -258,7 +258,7 @@ export default function OrdersScreen() {
                             <View style={styles.orderHeader}>
                                 <View style={styles.orderHeaderLeft}>
                                     <Text style={styles.serviceName}>{order.cart.name}</Text>
-                                    <Text style={styles.orderId}>Order #{order.order.order_id}</Text>
+                                    <Text style={styles.orderId}>Booking #{order.order.order_id}</Text>
                                 </View>
                                 <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.order_status.slug)}20` }]}>
                                     <Text style={[styles.statusText, { color: getStatusColor(order.order_status.slug) }]}>
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     orderId: {
-        fontSize: 13,
+        fontSize: 12,
         color: BrandColors.mutedText,
     },
     statusBadge: {
