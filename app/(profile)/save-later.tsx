@@ -75,6 +75,7 @@ export default function SaveLaterScreen() {
           <Ionicons name="arrow-back" size={24} color={BrandColors.text} />
         </TouchableOpacity>
         <Text style={styles.heading}>Saved for Later</Text>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
@@ -221,25 +222,24 @@ export default function SaveLaterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingBottom: 16,
   },
   backBtn: {
-    padding: 8,
-    marginRight: 8,
+    padding: 4,
   },
   heading: {
     fontSize: 20,
     fontWeight: '700',
     color: BrandColors.text,
+    flex: 1,
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   itemCard: {
-    backgroundColor: '#fff',
+    backgroundColor: BrandColors.background,
     borderRadius: 12,
     marginBottom: 12,
     overflow: 'hidden',
