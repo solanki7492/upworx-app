@@ -258,7 +258,7 @@ export default function OrdersScreen() {
                             <View style={styles.orderHeader}>
                                 <View style={styles.orderHeaderLeft}>
                                     <Text style={styles.serviceName}>{order.cart.name}</Text>
-                                    <Text style={styles.orderId}>Booking #{order.order.order_id}</Text>
+                                    <Text style={styles.orderId}>Booking #{order?.package_id}</Text>
                                 </View>
                                 <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.order_status.slug)}20` }]}>
                                     <Text style={[styles.statusText, { color: getStatusColor(order.order_status.slug) }]}>

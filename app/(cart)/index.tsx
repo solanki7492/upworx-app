@@ -9,14 +9,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -176,7 +176,7 @@ export default function CartScreen() {
     {}
   );
   const [orderSchedules, setOrderSchedules] = useState<
-    Record<string, { date: Date; time: string }>
+    Record<string, { date: string; time: string }>
   >({});
   const [orderMessages, setOrderMessages] = useState<Record<string, string>>(
     {}
@@ -360,7 +360,7 @@ export default function CartScreen() {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
 
-    return `${dd}/${mm}/${yyyy}`;
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   const loadOrderMetaIntoModal = (orderId: string) => {
@@ -372,8 +372,10 @@ export default function CartScreen() {
 
     // Load schedule
     const schedule = orderSchedules[orderId];
-    if (schedule) {
-      setSelectedDate(new Date(schedule.date));
+    if (schedule && schedule.date) {
+      // Parse the stored date string back to Date object
+      const parsedDate = new Date(schedule.date + 'T00:00:00');
+      setSelectedDate(parsedDate);
       setSelectedTime(schedule.time);
     } else {
       setSelectedDate(availableDays[0]);
@@ -432,9 +434,10 @@ export default function CartScreen() {
       return;
     }
     if (activeOrderId) {
+      const formattedDate = formatDateForAPI(selectedDate);
       setOrderSchedules((prev) => ({
         ...prev,
-        [activeOrderId]: { date: selectedDate, time: selectedTime },
+        [activeOrderId]: { date: formattedDate, time: selectedTime },
       }));
 
       // Update cart item in database immediately
@@ -457,7 +460,7 @@ export default function CartScreen() {
 
           await updateOrder(activeOrderId, {
             ...order,
-            serviceDate: formatDateForAPI(selectedDate),
+            serviceDate: formattedDate,
             serviceTime: selectedTime,
             message: formattedMessage || order.message,
           });
@@ -521,16 +524,6 @@ export default function CartScreen() {
 
     // Validate all orders have problems and schedules
     for (const order of orders) {
-      if (
-        problemOptions[order.mainService.slug]?.length > 0 &&
-        !orderProblems[order.orderId]?.length
-      ) {
-        Alert.alert(
-          'Error',
-          `Please select problems for ${order.mainService.name}`
-        );
-        return;
-      }
       if (!orderSchedules[order.orderId]) {
         Alert.alert(
           'Error',
@@ -912,7 +905,7 @@ export default function CartScreen() {
                             </Text>
                             <Text style={styles.selectionCardSubtitle}>
                               {hasSchedule
-                                ? `${formatDate(orderSchedules[order.orderId].date)}, ${orderSchedules[order.orderId].time}`
+                                ? `${formatDate(orderSchedules[order.orderId].date + 'T00:00:00')}, ${orderSchedules[order.orderId].time}`
                                 : 'Tap to select date & time'}
                             </Text>
                           </View>

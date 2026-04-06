@@ -297,7 +297,7 @@ export default function OrderDetailsScreen() {
                     <Text style={styles.serviceTitle}>{order.cart.name}</Text>
                     <View style={styles.infoRow}>
                         <Text style={styles.label}>Booking ID:</Text>
-                        <Text style={styles.value}>{order.order.order_id}</Text>
+                        <Text style={styles.value}>{order.package_id}</Text>
                     </View>
                     <View style={styles.infoRow}>
                         <Text style={styles.label}>Booking Date:</Text>
@@ -315,7 +315,7 @@ export default function OrderDetailsScreen() {
                             <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'right' }]}>Price/Unit</Text>
                         </View>
                         {order.cart.services.map((service, index) => (
-                            <View key={service.id} style={styles.tableRow}>
+                            <View key={`${service.id}-${index}`} style={styles.tableRow}>
                                 <Text style={[styles.tableCell, { flex: 2 }]}>{service.service}</Text>
                                 <Text style={[styles.tableCell, { flex: 1, textAlign: 'center' }]}>{service.qty}</Text>
                                 <Text style={[styles.tableCell, { flex: 1, textAlign: 'right' }]}>₹{service.price}</Text>
