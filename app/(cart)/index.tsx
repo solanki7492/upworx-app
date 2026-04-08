@@ -409,10 +409,20 @@ export default function CartScreen() {
               : message;
           }
 
-          await updateOrder(activeOrderId, {
+          // Get the schedule from local state to ensure proper date format
+          const schedule = orderSchedules[activeOrderId];
+          const updatePayload: any = {
             ...order,
             message: formattedMessage,
-          });
+          };
+
+          // If schedule exists, include the properly formatted date and time
+          if (schedule && schedule.date && schedule.time) {
+            updatePayload.serviceDate = schedule.date;
+            updatePayload.serviceTime = schedule.time;
+          }
+
+          await updateOrder(activeOrderId, updatePayload);
         }
       } catch (error) {
         console.error('Error updating cart with problems:', error);
